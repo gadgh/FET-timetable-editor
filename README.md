@@ -42,3 +42,8 @@ gadgh (George D.)
 ## License
 This project is distributed under the MIT License.
 See the `LICENSE` file for the complete license text.
+
+## Development note
+AI-assisted tools were used during parts of the development,
+debugging, and documentation process. The final code was reviewed,
+tested, and adapted by the maintainer.
