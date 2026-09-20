@@ -1,0 +1,4084 @@
+<!--
+
+This project is a significantly modified and extended version of:
+
+    FET - edit + print
+    Original author: George Theodoroy
+    g.theodoroy@gmail.com
+
+Original repository:
+    https://github.com/g-theodoroy/FET_edit-print
+
+Modifications and extensions by:
+    George D.
+
+The original MIT License attribution has been retained.
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FET - edit + print</title>
+    <style>
+        :root {
+            --tile-width: 40px;
+            --padding: 0.75px;
+            --margin: 0.75px;
+            --font-size: 14px
+        }
+
+        body {
+            font-family: arial narrow, sans-serif;
+            font-size: var(--font-size);
+            font-weight: normal;
+            font-stretch: condensed;
+        }
+
+        .container {
+            background-color: #f5fbff;
+            color: #11496e;
+            height: 230px;
+            width: 500px;
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid #2b375e;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-top: 50px;
+            font-size: 45px;
+        }
+		
+		#title {
+			text-align: center;
+			font-weight: normal;
+			white-space: pre-wrap;
+		}			
+
+        table {
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th,
+        td {
+            min-width: 140px;
+			border: 1px solid black;
+            padding-bottom: var(--padding);
+            padding-left: var(--padding);
+            padding-right: var(--padding);
+            margin-bottom: var(--margin);
+            --mf: 2;
+            min-width: calc((var(--tile-width) + (var(--padding) * var(--mf)) + (var(--margin) * var(--mf))));
+        }
+
+        td.hour {
+            --mf: 2;
+            max-width: calc(var(--tile-width) + var(--padding) * var(--mf) + var(--margin) * (var(--mf) + 1));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        td.program {
+            --mf: 2;
+            max-width: calc(var(--tile-width) + var(--padding) * var(--mf) + var(--margin) * (var(--mf) + 1));
+        }
+
+        td.text-center {
+            text-align: center;
+        }
+
+        td.text-small {
+            font-size: calc(var(--font-size)*7/6);
+			text-align: center;
+			font-weight: bold;
+			font-stretch: condensed;
+        }
+
+        td.not-av {
+            background-image: radial-gradient(circle, rgb(203 213 225) 2px, #fff 2px);
+        }
+
+        span {
+            width: var(--tile-width);
+        }
+
+        span.w-2 {
+            --mf: 2;
+            width: calc((var(--tile-width) + (var(--padding) * var(--mf)) + var(--margin) * var(--mf)) * var(--mf))
+        }
+
+        span.w-3 {
+            --mf: 3;
+            width: calc((var(--tile-width) + (var(--padding) * var(--mf)) + (var(--margin) * (var(--mf) - 1))) * var(--mf))
+        }
+
+        span.w-4 {
+            --mf: 4;
+            width: calc((var(--tile-width) + (var(--padding) * var(--mf)) + (var(--margin) * (var(--mf) - 1))) * var(--mf))
+        }
+
+        span.w-5 {
+            --mf: 5;
+            width: calc((var(--tile-width) + (var(--padding) * var(--mf)) + (var(--margin) * (var(--mf) - 1))) * var(--mf))
+        }
+
+        td.w-3 {
+            --mf: 6;
+            width: calc((var(--tile-width) + (var(--padding) * var(--mf)) + (var(--margin) * (var(--mf) + 1))) * var(--mf))
+        }
+
+        .drag-span {
+            /*min-width: 60px;*/
+			background-color: #e3f2fd;
+            padding: var(--padding);
+            margin: var(--margin);
+            cursor: move;
+            border: 1px solid #90caf9;
+            border-radius: 4px;
+            user-select: none;
+            text-align: center;
+            /* overflow: hidden; */
+        }
+
+        .warn-span {
+            border-bottom: 3px solid #b80404;
+        }
+
+        .display-block {
+            display: block;
+        }
+
+        .display-inline-block {
+            display: inline-block;
+        }
+
+        .display-none {
+            display: none !important;
+        }
+
+        .highlight {
+            background-color: #ddf314;
+        }
+
+        .spot-expelled {
+            background-color: #fdc9c9;
+        }
+
+        .spot-last-cell {
+            background-color: #eff7a7;
+        }
+
+        .no-drag {
+            pointer-events: none;
+        }
+
+        td.warehouse {
+            border: none;
+            min-width: calc(var(--tile-width)*3);
+            background-color: #fafafa;
+        }
+
+        td.warehouse>* {
+            vertical-align: middle;
+        }
+
+        td.footer {
+            border: none;
+            padding-top: 5px;
+            font-size: 10px;
+            color: #6c6d6e;
+            text-align: center;
+            max-width: var(--tile-width);
+            word-wrap: break-word;
+            background-color: #fafafa;
+        }
+
+        div.whiteboard {
+            position: fixed;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: normal;
+            font-size: 16px;
+            background-color: #fafafa;
+			opacity: var(--opacity);
+            padding: 10px;
+            margin: var(--margin);
+            border-radius: 4px;
+            border: 3px solid;
+			border-color: #cbd6df;
+			pointer-events: none; /* ΣΗΜΑΝΤΙΚΟ: Το whiteboard δεν πιάνει events */
+			z-index: 1000;
+			max-width: 400px;
+			white-space: pre-wrap;
+		}
+
+        td.strike {
+            text-decoration: line-through;
+        }
+
+        #tablediv {
+            display: inline-block;
+            margin: auto;
+        }
+
+        #tablecontainer {
+            display: flex;
+			/*text-align: center;*/
+        }
+
+        .gth {
+            position: fixed;
+            bottom: 1px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgb(155, 155, 155);
+            text-align: center;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .a-gth {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            .print-table {
+                page-break-inside: avoid !important;
+            }
+        }
+
+        /* The Modal (background) */
+        .modal {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            /* Stay in place */
+            z-index: 1;
+            /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            /* Full width */
+            height: 100%;
+            /* Full height */
+            overflow: auto;
+            /* Enable scroll if needed */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Black w/ opacity */
+        }
+
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            /* Could be more or less, depending on screen size */
+            max-width: 600px;
+            border-radius: 5px;
+        }
+
+        /* Close Button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: normal;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Modal Header */
+        .modal-header {
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Modal Body */
+        .modal-body {
+            padding: 15px 0;
+        }
+
+        /* Error Modal Styles */
+        .error-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .error-modal-content {
+            background-color: #ffe6e6;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #ff4444;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .error-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #cc0000;
+        }
+
+        .error-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        .error-title {
+            font-size: 20px;
+            font-weight: normal;
+        }
+
+        .error-message {
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .error-close-btn {
+            background-color: #cc0000;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .error-close-btn:hover {
+            background-color: #b30000;
+        }
+
+        .top-span {
+            width: 100%;
+            overflow: hidden;
+			font-size: 10px !important;
+        }
+
+        .bottom-span {
+            display: block;
+            width: 100%;
+            overflow: hidden;
+			font-size: 14px !important;
+        }
+
+		/* Container που κρατάει τα δύο toolbars στη σειρά */
+		#top-bar {
+			position: fixed;
+			top: 5px;
+			left: 5px;
+			display: flex;
+			align-items: flex-start;
+			gap: 8px;
+			z-index: 1000;
+		}
+
+		/* Γραμμή εργαλείων (κουμπιά ενεργειών) */
+		#undo-redo {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 2px;
+			padding: 4px 5px;
+			background-color: #f0f0f0;
+			border-radius: 4px;
+			border: 1px solid #ccc;
+			width: fit-content;
+		}
+
+		/* Κουμπιά ενεργειών */
+		.undo-redo-button {
+			width: 30px;
+			height: 30px;
+			line-height: 30px;
+			text-align: center;
+			color: #fafafa;
+			font-weight: bold;
+			font-size: 16px;
+			box-sizing: border-box;
+			padding: 0;
+			background-color: #4b6ede;
+			border-radius: 5px;
+			border: 1px solid #eeeeee;
+			cursor: pointer;
+		}
+
+		/* Κουμπιά ημερών container */
+		#day-buttons {
+			display: inline-block;
+			padding: 4px 5px;
+			background-color: #f0f0f0;
+			border-radius: 4px;
+			border: 1px solid #ccc;
+			width: fit-content;
+			align-items: center;
+		}
+
+		/* Label «Ημέρες:» */
+		.day-buttons-label {
+			font-size: 12px;
+			margin-right: 5px;
+			color: #555;
+			font-weight: normal;
+			align-self: center;
+		}
+
+		/* Κουμπιά ημερών */
+		.day-button {
+			display: inline-block;
+			width: 24px;
+			height: 24px;
+			line-height: 24px;
+			text-align: center;
+			background-color: #fff;
+			border: 1px solid #999;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 12px;
+			font-weight: bold;
+			transition: all 0.2s ease;
+			user-select: none;
+		}
+
+		.day-button:hover {
+			transform: scale(1.05);
+			background-color: #e0e0e0;
+		}
+
+		.day-button.active {
+			background-color: #4CAF50;
+			color: white;
+			border-color: #45a049;
+		}
+
+		.day-button.inactive {
+			background-color: #f44336;
+			color: white;
+			border-color: #d32f2f;
+			text-decoration: line-through;
+			opacity: 0.9;
+		}
+
+		.day-button.inactive:hover {
+			background-color: #d32f2f;
+		}
+
+		/* Ενίσχυση του no-print για εκτύπωση */
+		@media print {
+			.no-print,
+			#day-buttons,
+			.day-button {
+				display: none !important;
+			}
+		}
+
+		/* Για τις επηρεαζόμενες κάρτες κατά το drag */
+		.dragging {
+			opacity: 0.8;
+			transform: rotate(12deg) scale(1.02);
+			-ms-transform: rotate(12deg) scale(1.02);
+			-webkit-transform: rotate(12deg) scale(1.02);
+			transition: all 0.2s ease;
+			z-index: 1000;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+		}
+
+		/* Απόκρυψη ημερών από όλες τις προβολές */
+		.hidden-day {
+			display: none !important;
+		}
+
+		/* Στυλ για highlight ίδιων τμημάτων */
+		.same-tmima {
+			color: #fafafa !important;
+			background-color: #705f09 !important;
+			outline: 2px solid #ffaa00 !important;
+			outline-offset: -2px;
+			transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+		}
+
+		.same-mathima {
+			transform: rotate(-15deg) scale(1.15);
+			-ms-transform: rotate(-15deg) scale(1.15);
+			-webkit-transform: rotate(-15deg) scale(1.15);
+			font-weight: bold;
+			box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+			z-index: 1000;
+			outline: 2px solid #ff9900 !important;
+			outline-offset: -2px;
+			transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.conflicting {
+			background-color: #992727 !important;
+			color: #ffffff !important;
+			outline: 2px solid #580000 !important;
+			outline-offset: -2px;
+			transform: rotate(-12deg) scale(1.1);
+			-ms-transform: rotate(-12deg) scale(1.1);
+			-webkit-transform: rotate(-12deg) scale(1.1);
+			transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+			opacity: 0.9;
+			font-weight: bold;
+		}
+
+		.conflicting .top-span,
+		.conflicting .bottom-span {
+			color: #ffffff !important;
+		}
+
+		tr.conflicting {
+			background-color: #fcdddd !important;
+		}
+
+		.color-picker-modal {
+			display: none;
+			position: fixed;
+			z-index: 1500;
+			left: 0; top: 0;
+			width: 100%; height: 100%;
+			background-color: rgba(0,0,0,0.5);
+		}
+		.color-picker-content {
+			background-color: #fefefe;
+			margin: 5% auto;
+			padding: 20px;
+			border: 1px solid #888;
+			width: 90%;
+			max-width: 600px;
+			border-radius: 8px;
+			max-height: 85vh;
+			display: flex;
+			flex-direction: column;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+		}
+		.color-picker-header {
+			border-bottom: 1px solid #ddd;
+			padding-bottom: 10px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+		.color-picker-header h2 { margin: 0; font-size: 22px; }
+		.close-color-picker {
+			font-size: 28px;
+			font-weight: bold;
+			cursor: pointer;
+			color: #aaa;
+			line-height: 1;
+		}
+		.close-color-picker:hover { color: #000; }
+		.color-picker-body {
+			overflow-y: auto;
+			flex: 1;
+			padding: 10px 0;
+			max-height: 55vh;
+		}
+		.color-picker-body table {
+			width: 100%;
+			border-collapse: collapse;
+		}
+		.color-picker-body th,
+		.color-picker-body td {
+			border: 1px solid #ccc;
+			padding: 6px 10px;
+			text-align: left;
+		}
+		.color-picker-body th { background-color: #f0f0f0; }
+		.color-swatch {
+			width: 70px;
+			height: 26px;
+			border: 1px solid #999;
+			border-radius: 4px;
+			cursor: pointer;
+			display: inline-block;
+		}
+		.color-swatch:hover {
+			border-color: #000;
+			box-shadow: 0 0 6px rgba(0,0,0,0.4);
+		}
+		.color-picker-footer {
+			border-top: 1px solid #ddd;
+			padding-top: 10px;
+			display: flex;
+			gap: 8px;
+			justify-content: flex-end;
+		}
+		.btn-color-picker {
+			padding: 8px 18px;
+			border: 1px solid #2b375e;
+			background-color: #4b6ede;
+			color: white;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 14px;
+		}
+		.btn-color-picker:hover { background-color: #3a5bce; }
+		#cancelColorsBtn { background-color: #999; border-color: #666; }
+		#cancelColorsBtn:hover { background-color: #777; }
+
+		.color-palette {
+			position: fixed;
+			z-index: 2000;
+			background: white;
+			border: 2px solid #333;
+			border-radius: 8px;
+			padding: 10px;
+			display: grid;
+			grid-template-columns: repeat(12, 1fr);
+			gap: 5px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+			max-width: 420px;
+			max-height: 420px;
+			overflow-y: auto;
+		}
+		.color-palette .palette-color {
+			width: 26px;
+			height: 26px;
+			border: 1px solid #999;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+		.color-palette .palette-color:hover {
+			transform: scale(1.15);
+			border-color: #000;
+			box-shadow: 0 0 4px rgba(0,0,0,0.5);
+		}
+
+    </style>
+</head>
+
+<body>
+
+    <div id="container" class="container">
+        <h1>FET - edit + print</h1>
+        <p>Please input a locked (data_and_timetable) fet file</p>
+        <input type="file" id="xmlFileInput" accept=".fet">
+    </div>
+
+	<div id="top-bar">
+		<div id="undo-redo" class="no-print">
+			<div id="refresh" onclick="window.location.reload()" class="undo-redo-button display-inline-block no-print"
+				title="Reload">&#10227;</div>
+			<div id="aboutBtn" class="undo-redo-button display-inline-block no-print" title="About">&quest;</div>
+			<div id="rtl" onclick="changeDirection()" class="undo-redo-button display-none no-print show-hide"
+				title="Change direction">&harr;</div>
+			<div id="down" onclick="downloadXml()" class="undo-redo-button display-none no-print show-hide"
+				title="Download fet file">&dArr;</div>
+			<div id="csv" class="undo-redo-button display-none no-print show-hide" 
+				title="Export table as .csv">&#9783;
+			</div>
+			<div id="sameCards" class="undo-redo-button display-none no-print show-hide" 
+				 title="Enable highlight same group cards">&star;
+			</div>			
+			<div id="openColorPicker" class="undo-redo-button display-none no-print show-hide"
+				 title="Teacher colors">&#127912;</div>
+			<div id="toggleFooter" onclick="toggleFooterVisible()" class="undo-redo-button display-none no-print show-hide"
+				title="Toggle footer visible">&oplus;</div>
+			<div id="showSubject" class="undo-redo-button display-none no-print show-hide"
+				title="Show/Hide subject&#10;Click left - right&#10;to set font size">&ctdot;
+			</div>
+			<div id="setTileWidth" class="undo-redo-button display-none no-print show-hide" 
+				 title="Set tile width&#10;Click left - right to&#10;diminish - enlarge">&harr;
+			</div>			
+			<div id="setTitle" onclick="setTitle()" class="undo-redo-button display-none no-print show-hide"
+				title="Set title">&#9997;</div>
+			<div id="printTeachers" onclick="printTeachersSchedule()"
+				class="undo-redo-button display-none no-print show-hide" title="Print Teachers Schedule">T</div>
+			<div id="printGroups" onclick="printGroupsSchedule()" class="undo-redo-button display-none no-print show-hide"
+				title="Print Groups Schedule">G</div>
+			<div id="prev" onclick="prev()" class="undo-redo-button display-none no-print show-hide" title="Undo">&larr;
+			</div>
+			<div id="next" onclick="next()" class="undo-redo-button display-none no-print show-hide" title="Redo">&rarr;
+			</div>
+		</div>
+		<div id="day-buttons" class="no-print" style="display: none;">
+			<span class="day-buttons-label">Ημέρες:</span>
+			<div id="day1" class="day-button" onclick="callDayNotPrint(1)" title="Δευτέρα">ΔΕ</div>
+			<div id="day2" class="day-button" onclick="callDayNotPrint(2)" title="Τρίτη">ΤΡ</div>
+			<div id="day3" class="day-button" onclick="callDayNotPrint(3)" title="Τετάρτη">ΤΕ</div>
+			<div id="day4" class="day-button" onclick="callDayNotPrint(4)" title="Πέμπτη">ΠΕ</div>
+			<div id="day5" class="day-button" onclick="callDayNotPrint(5)" title="Παρασκευή">ΠΑ</div>
+		</div>	
+    </div>
+
+    <div id="tablecontainer">
+        <div id="tablediv">
+            <h2 id='title'>&nbsp;</h2>
+
+            <table id="programTable">
+                <thead></thead>
+                <tbody></tbody>
+                <tfoot></tfoot>
+            </table>
+        </div>
+
+        <div class="gth  no-print">
+            <span>copyright: George Theodoroy, licence: MIT Licence, mail: </span>
+            <a class="a-gth" href="mailto:g.theodoroy@gmail.com?subject=FET-edit+print"
+                title="mail to: George Theodoroy">GΘ@2025</a>
+        </div>
+
+    </div>
+
+    <div id="whiteboard" class="whiteboard display-none"></div>
+
+    <!-- The Modal -->
+    <div id="aboutModal" class="modal">
+        <!-- Modal content -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h2>About FET - edit + print</h2>
+            </div>
+            <div class="modal-body">
+                <p>This "program" was created in February 2025 by:</p>
+                <blockquote>
+                    <p>George Theodoroy</p>
+                </blockquote>
+                <blockquote>
+                    <p>email: g.theodoroy&commat;gmail.com</p>
+                </blockquote>
+                <p>It is provided as is under "MIT License": https://opensource.org/license/mit</p>
+
+                <p>&nbsp;</p>
+
+                <p>FET - edit + print is free. If you like you can treat me a coffee ...</p>
+
+                <form action="https://www.paypal.com/donate" method="post" target="_blank" style="text-align: center">
+                    <input type="hidden" name="hosted_button_id" value="C2VEYT3GPPNY4">
+                    <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
+                        name="submit" title="PayPal - The safer, easier way to pay online!"
+                        alt="Donate with PayPal button">
+                    <!-- <img alt="" border="0" src="https://www.paypal.com/en_GR/i/scr/pixel.gif" width="1" height="1" /> -->
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="errorModal" class="error-modal">
+        <div class="error-modal-content">
+            <div class="error-header">
+                <div class="error-icon">&#9888;</div>
+                <div class="error-title" id="errorTitle"></div>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+            <button class="error-close-btn" onclick="closeError()">OK</button>
+        </div>
+    </div>
+
+	<div id="colorPickerModal" class="color-picker-modal">
+		<div class="color-picker-content">
+			<div class="color-picker-header">
+				<h2>Επιλογή χρωμάτων καθηγητών</h2>
+				<span class="close-color-picker">&times;</span>
+			</div>
+			<div class="color-picker-body">
+				<table id="colorPickerTable">
+					<thead>
+						<tr><th>Καθηγητής</th><th>Χρώμα</th></tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+			<div class="color-picker-footer">
+				<button class="btn-color-picker" id="openColorsBtn">Άνοιγμα</button>
+				<button class="btn-color-picker" id="applyColorsBtn">Εφαρμογή</button>
+				<button class="btn-color-picker" id="cancelColorsBtn">Άκυρο</button>
+				<button class="btn-color-picker" id="saveColorsBtn">Αποθήκευση</button>
+				<input type="file" id="colorsFileInput" accept=".json" style="display:none">
+			</div>
+		</div>
+	</div>
+
+	<div id="colorPalette" class="color-palette display-none"></div>
+
+    <script>
+
+        const showColors = true
+        const spotExpellDuration = 7000
+        const excludeInactiveActivities = true
+
+        // removes lightgreen background of row and green background of cells
+        const removeBackground = (cell) => {
+            draggedElement.parentElement.parentElement.parentElement.rows[draggedElement.getAttribute('row') - 2].style.background = ''
+            Array.from(draggedElement.parentElement.parentElement.parentElement.rows[draggedElement.getAttribute('row') - 2].cells)
+        .forEach(c => {
+				// Μην καθαρίζεις το χρώμα από τις στήλες συνόλων
+				if (!c.classList.contains('no-drop-column')) {
+					c.style.background = ''
+				}
+			})
+        }
+
+        // sets lightgreen background to teacher row 
+        // sets green background to cells where student-class is missing
+        const setBackgroundGreen = (cell) => {
+            draggedElement.parentElement.parentElement.parentElement.rows[draggedElement.getAttribute('row') - 2].style.background = '#cfffd7'
+            const dragElTmima = draggedElement.getAttribute('tmima')
+            const possiblePositions = Array.from(draggedElement.parentElement.parentElement.parentElement.parentElement.tFoot.rows[0].cells).filter(c => c.innerText !== '')
+            possiblePositions.forEach(p => {
+                if (p.innerText.includes(dragElTmima)) {
+                    if (p.parentElement.parentElement.parentElement.tBodies[0].rows[draggedElement.getAttribute('row') - 2].cells[p.cellIndex].classList.contains('not-av')) { return }
+					// Μην χρωματίζεις τις στήλες συνόλων
+					if (p.classList.contains('no-drop-column')) {
+						return; // Παράλειψε αυτό το κελί
+					}
+                    p.parentElement.parentElement.parentElement.tBodies[0].rows[draggedElement.getAttribute('row') - 2].cells[p.cellIndex].style.background = 'green'
+                }
+            })
+        }
+
+        // global variables
+        let loadedXml = null;
+        let xmlName = null;
+        let draggedElement = null;
+        let warehouseColumnIndex = null;
+        let hoursLength = null
+        let groupsArray = []
+        let noTeacher = false;
+        let showFooter = false;
+        let tileWidth = null;
+		let originalTileWidth = 40;
+		let currentView = 'normal'; // 'normal', 'teachers', 'groups'
+		let lastHighlightedCell = null;
+		
+        // NN -> NodeName
+        let NN_DAY = 'Preferred_Day'
+        let NN_HOUR = 'Preferred_Hour'
+
+		let teachersColorGlobal = {}        // {teacherName: hex}
+		let teachersTextColorGlobal = {}    // {teacherName: textColor}
+		let teachersIndexListGlobal = {}    // {teacherName: rowIndex}
+		let pendingColors = {}              // προσωρινό state όσο το modal είναι ανοιχτό		
+
+        // add event listener to file element
+        document.getElementById('xmlFileInput').addEventListener('change', handleFileSelect, false);
+
+		function hslToHex(h, s, l) {
+			l /= 100
+			const a = s * Math.min(l, 1 - l) / 100
+			const f = n => {
+				const k = (n + h / 30) % 12
+				const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
+				return Math.round(255 * color).toString(16).padStart(2, '0')
+			}
+			return `#${f(0)}${f(8)}${f(4)}`
+		}
+
+		function getContrastTextColor(hexColor) {
+			const c = hexColor.substring(1)
+			const rgb = parseInt(c, 16)
+			const r = (rgb >> 16) & 0xff
+			const g = (rgb >> 8) & 0xff
+			const b = rgb & 0xff
+			const lum = 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255)
+			return lum > 0.5 ? '#000000' : '#ffffff'
+		}
+
+        function handleFileSelect(event) {
+
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // set name of file for later use
+            xmlName = file.name
+
+            // read fet file
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                try {
+
+                    const xmlContent = e.target.result;
+                    const xmlDoc = new window.DOMParser().parseFromString(xmlContent, "text/xml")
+                    // Check for parsing errors
+                    const errorNodes = xmlDoc.getElementsByTagName("parsererror");
+                    if (errorNodes.length > 0) {
+                        throw new Error('Error parsing XML');
+                    }
+
+                    // Process the XML
+                    displayXMLContent(xmlDoc);
+
+                    // Store modified XML
+                    const serializer = new XMLSerializer();
+                    loadedXml = serializer.serializeToString(xmlDoc);
+
+				} catch (error) {
+					console.error(error);                // full stack trace με πραγματική γραμμή
+					console.error(error.stack);
+					showError('Error', error.message + '\n(δες Console για λεπτομέρειες)');
+				}
+				// ΕΜΦΑΝΙΣΕ ΚΑΙ ΤΑ ΚΟΥΜΠΙΑ ΗΜΕΡΩΝ
+				document.getElementById('day-buttons').style.display = 'inline-block';
+
+            };
+
+            reader.onerror = function () {
+                console.log('Error reading file');
+                showError('Error', 'Error reading - loading data from "' + xmlName + '".')
+            };
+
+            reader.readAsText(file);
+
+            // save filename for later use
+            xmlName = file.name
+
+            // set UI - set title - show-hide buttons first-screen
+            document.getElementById('xmlFileInput').value = '';
+            document.getElementById('container').style.display = 'none';
+            document.getElementById('title').textContent = file.name;
+            // loop through buttons with class 'show-hide' and set them visible
+            const showHide = Array.from(document.querySelectorAll(`.show-hide`))
+            showHide.forEach(el => {
+                el.classList.remove('display-none')
+                el.classList.add('display-inline-block')
+            })
+        }
+
+        // Download modified XML
+        function downloadXml() {
+            if (!loadedXml) {
+                alert('Please load an XML file first!');
+                return;
+            }
+
+            // load xml to DOM
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(loadedXml, "application/xml");
+
+            // get all ConstraintActivityPreferredStartingTime
+            const ConstraintActivityPreferredStartingTime = xmlDoc.evaluate('//fet/Time_Constraints_List/ConstraintActivityPreferredStartingTime', xmlDoc, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+
+            // get all cards
+            let allSpans = Array.from(document.querySelectorAll(`.drag-span`))
+
+            for (i = 0; i < ConstraintActivityPreferredStartingTime.snapshotLength; i++) {
+                xmlElement = ConstraintActivityPreferredStartingTime.snapshotItem(i)
+                // get Activity_Id and find spans with the same id
+                const id = xmlElement.getElementsByTagName('Activity_Id')[0].textContent
+                const span = allSpans.filter(sp => sp.id == id)
+
+                // cards with same id might be 1 or 2 ( 2 when are 2 teacher at a class)
+                // remove items to finally track if all of them are processed 
+                for (j = 0; j < span.length; j++) {
+                    allSpans.splice(allSpans.indexOf(span[j]), 1)
+                }
+
+                // in case of Activities with Active = false that we don't load
+                // might be ConstraintActivityPreferredStartingTime but no card
+                // so if no span[0] bypass
+                if (!span[0]) continue
+
+                // every cell (span.parenElement) has attributes of Day and Hour
+                // warehouse cells have not
+                // if cell has Day and Hour card is in program. Set values to xml
+                if (span[0].parentElement.getAttribute('day')) {
+                    xmlElement.getElementsByTagName(NN_DAY)[0].textContent = span[0].parentElement.getAttribute('day')
+                    xmlElement.getElementsByTagName(NN_HOUR)[0].textContent = span[0].parentElement.getAttribute('hour')
+                } else {
+                    // if no Day (warehouse) remove node element from xml
+                    xmlElement.parentElement.removeChild(xmlElement);
+                }
+            }
+
+            // if allSpans contains entries must append them to xml
+
+            // filter to exclude cards in warehouse
+            allSpans = allSpans.filter(sp => !(sp.getAttribute('col') == warehouseColumnIndex))
+
+            //remove the remaining double card of cards with same id (2 teachers in 1 class)
+            let toRemove = []
+            for (i in allSpans) {
+                // find cards with same id 
+                sameIdSpans = allSpans.filter(sp => sp.id == allSpans[i].id)
+                if (sameIdSpans.length > 1) {
+                    // if they are more than one it means that two teachers are in the same class
+                    // i save as key => value card.id => index to remove
+                    toRemove[allSpans.findIndex(item => item.id === sameIdSpans[1].id)] = i
+                }
+            }
+            //  sort descending to avoid array index undefined
+            var keys = Object.keys(toRemove).sort(function (a, b) { return b - a; });
+            for (var i = 0; i < keys.length; i++) {
+                allSpans.splice(toRemove[keys[i]], 1);
+            }
+
+            // append remaining allSpans entries to xml
+
+            // <ConstraintActivityPreferredStartingTime>
+            // 	 <Weight_Percentage>100</Weight_Percentage>
+            // 	 <Activity_Id>134</Activity_Id>
+            // 	 <Preferred_Day>Πε</Preferred_Day>  - after version 7.1.4 <Day>Πε</Day>
+            // 	 <Preferred_Hour>2</Preferred_Hour> - after version 7.1.4 <Hour>Πε</Hour>
+            // 	 <Permanently_Locked>false</Permanently_Locked>
+            // 	 <Active>true</Active>
+            // 	 <Comments></Comments>
+            // </ConstraintActivityPreferredStartingTime>
+
+            const TimeConstraintsList = xmlDoc.getElementsByTagName('Time_Constraints_List')
+
+            for (i = 0; i < allSpans.length; i++) {
+                const newElem = xmlDoc.createElement("ConstraintActivityPreferredStartingTime");
+
+                let newElemChild = xmlDoc.createElement("Weight_Percentage");
+                let newText = xmlDoc.createTextNode(100);
+                newElemChild.appendChild(newText)
+                newElem.appendChild(newElemChild)
+
+                newElemChild = xmlDoc.createElement("Activity_Id");
+                newText = xmlDoc.createTextNode(allSpans[i].id);
+                newElemChild.appendChild(newText)
+                newElem.appendChild(newElemChild)
+
+                newElemChild = xmlDoc.createElement(NN_DAY);
+                newText = xmlDoc.createTextNode(allSpans[i].parentElement.getAttribute('day'));
+                newElemChild.appendChild(newText)
+                newElem.appendChild(newElemChild)
+
+                newElemChild = xmlDoc.createElement(NN_HOUR);
+                newText = xmlDoc.createTextNode(allSpans[i].parentElement.getAttribute('hour'));
+                newElemChild.appendChild(newText)
+                newElem.appendChild(newElemChild)
+
+                newElemChild = xmlDoc.createElement("Permanently_Locked");
+                newText = xmlDoc.createTextNode('false');
+                newElemChild.appendChild(newText)
+                newElem.appendChild(newElemChild)
+
+                newElemChild = xmlDoc.createElement("Active");
+                newText = xmlDoc.createTextNode('true');
+                newElemChild.appendChild(newText)
+                newElem.appendChild(newElemChild)
+
+                newElemChild = xmlDoc.createElement("Comments");
+                newElem.appendChild(newElemChild)
+
+                TimeConstraintsList[0].appendChild(newElem)
+
+            }
+
+            // ask user to confirm if he/she wants to set all time constraints to inactive
+            var ok = confirm('Disable all unnecessary constrains?\nPlease confirm.')
+            if (ok) {
+
+                // Time_Constraints_List
+                // set all Time_Constraints_List to inactive
+                // except - ConstraintBasicCompulsoryTime - ConstraintActivityPreferredStartingTime
+                const xmlTimeElements = xmlDoc.evaluate('//fet/Time_Constraints_List', xmlDoc, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                for (i = 0; i < xmlTimeElements.snapshotItem(0).children.length; i++) {
+                    if (xmlTimeElements.snapshotItem(0).children[i].localName == 'ConstraintBasicCompulsoryTime') { continue }
+                    if (xmlTimeElements.snapshotItem(0).children[i].localName == 'ConstraintActivityPreferredStartingTime') { continue }
+                    xmlTimeElements.snapshotItem(0).children[i].getElementsByTagName('Active')[0].textContent = 'false'
+                }
+
+                // Space_Constraints_List
+                // set all Space_Constraints_List to inactive
+                // except - ConstraintBasicCompulsorySpace
+                const xmlSpaceElements = xmlDoc.evaluate('//fet/Space_Constraints_List', xmlDoc, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                for (i = 0; i < xmlSpaceElements.snapshotItem(0).children.length; i++) {
+                    if (xmlSpaceElements.snapshotItem(0).children[i].localName == 'ConstraintBasicCompulsorySpace') { continue }
+                    xmlSpaceElements.snapshotItem(0).children[i].getElementsByTagName('Active')[0].textContent = 'false'
+                }
+            }
+
+            // pretty format modified XML
+            const serializer = new XMLSerializer();
+            XmlDownload = prettyFormatXml(serializer.serializeToString(xmlDoc))
+            XmlDownload = '\ufeff' + XmlDownload + '\n';
+
+            // send it for download
+            const blob = new Blob([XmlDownload], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            // add _edit_print to filename
+            const ext = xmlName.slice(xmlName.lastIndexOf("."))
+            const name = xmlName.slice(0, xmlName.lastIndexOf(".")) + '_edit_print'
+
+            a.download = name + ext;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // format xml (it is not elegant but does the job)
+        /* the desired result
+          <ConstraintActivityPreferredStartingTime>
+            <Weight_Percentage>100</Weight_Percentage>
+            <Activity_Id>134</Activity_Id>
+            <Preferred_Day>Πε</Preferred_Day>  - after version 7.1.4 <Day>Πε</Day>
+            <Preferred_Hour>2</Preferred_Hour> - after version 7.1.4 <Hour>Πε</Hour>
+            <Permanently_Locked>false</Permanently_Locked>
+            <Active>true</Active>
+            <Comments/>
+          </ConstraintActivityPreferredStartingTime>
+        */
+        function prettyFormatXml(xml) {
+            xml = xml.replace(/\n{2,}/g, '\n');
+            xml = xml.replace(/(<ConstraintActivityPreferredStartingTime>)(<)/g, '  $1\n      $2')
+            xml = xml.replace(/(<\/Weight_Percentage>)(<)/g, '$1\n      $2')
+            xml = xml.replace(/(<\/Activity_Id>)(<)/g, '$1\n      $2')
+            let re = new RegExp(String.raw`(<\/${NN_DAY}>)(<)`, "g");
+            xml = xml.replace(re, '$1\n      $2')
+            re = new RegExp(String.raw`(<\/${NN_HOUR}>)(<)`, "g");
+            xml = xml.replace(re, '$1\n      $2')
+            xml = xml.replace(/(<\/Permanently_Locked>)(<)/g, '$1\n      $2')
+            xml = xml.replace(/(<\/Active>)(<)/g, '$1\n      $2')
+            xml = xml.replace(/(<Comments\/>)(<)/g, '$1\n    $2')
+            xml = xml.replace(/(<\/ConstraintActivityPreferredStartingTime>)(\s*<)/g, '$1\n  $2')
+            return xml
+        }
+
+        function displayXMLContent(xml) {
+
+			// Δυναμική ανίχνευση των ονομάτων των tags (Day/Hour ή Preferred_Day/Preferred_Hour)
+			// Ελέγχουμε απευθείας το πρώτο ConstraintActivityPreferredStartingTime
+			const sampleCAST = xml.getElementsByTagName("ConstraintActivityPreferredStartingTime")[0];
+			if (sampleCAST && sampleCAST.getElementsByTagName("Day").length > 0) {
+				NN_DAY = 'Day';
+				NN_HOUR = 'Hour';
+			} else {
+				NN_DAY = 'Preferred_Day';
+				NN_HOUR = 'Preferred_Hour';
+			}
+
+            // read data from xml
+            const NumOfDays = xml.getElementsByTagName("Number_of_Days")[0].textContent;
+            const NumOfHours = xml.getElementsByTagName("Number_of_Hours")[0].textContent;
+            const tableColNum = NumOfDays * NumOfHours + 1
+
+            // read days
+            const daysList = xml.getElementsByTagName("Days_List");
+            const days = daysList[0].getElementsByTagName("Day");
+            // make array of [dayName] = index
+            const daysIndexList = {}
+            for (let i = 0; i < days.length; i++) {
+                daysIndexList[days[i].getElementsByTagName("Name")[0].textContent] = i
+            }
+
+            // read hours
+            const hoursList = xml.getElementsByTagName("Hours_List");
+            const hours = hoursList[0].getElementsByTagName("Hour");
+            hoursLength = hours.length
+            // make array of [hourName] = index
+            const hoursIndexList = {}
+            for (let i = 0; i < hoursLength; i++) {
+                hoursIndexList[hours[i].getElementsByTagName("Name")[0].textContent] = i
+            }
+
+            // read teachers
+            const teachersList = xml.getElementsByTagName("Teachers_List");
+            const teachers = teachersList[0].getElementsByTagName("Teacher");
+			// arrays of teacherData - teacherColor
+			const teachersIndexList = {}
+			const teachersColor = {}
+			const teachersTextColor = {}
+
+			/*// βοηθητικές συναρτήσεις
+			function hslToHex(h, s, l) {
+				l /= 100
+				const a = s * Math.min(l, 1 - l) / 100
+				const f = n => {
+					const k = (n + h / 30) % 12
+					const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
+					return Math.round(255 * color).toString(16).padStart(2, '0')
+				}
+				return `#${f(0)}${f(8)}${f(4)}`
+			}
+
+			// υπολογισμός φωτεινότητας χρώματος (για το contrast)
+			function getLuminance(hexColor) {
+				const c = hexColor.substring(1)
+				const rgb = parseInt(c, 16)
+				const r = (rgb >> 16) & 0xff
+				const g = (rgb >> 8) & 0xff
+				const b = rgb & 0xff
+				// αναλογική φωτεινότητα κατά WCAG
+				return 0.2126 * (r / 255) + 0.7152 * (g / 255) + 0.0722 * (b / 255)
+			}
+
+			// επιλέγει λευκό ή μαύρο ανάλογα με το φόντο
+			function getContrastTextColor(hexColor) {
+				return getLuminance(hexColor) > 0.5 ? '#000000' : '#ffffff'
+			}*/
+
+			// Υπολόγισε όλες τις base hues
+			const step = 360 / teachers.length
+			const baseHues = []
+
+			for (let i = 0; i < teachers.length; i++) {
+				baseHues.push((i * step) % 360)
+			}
+
+			// Τώρα διάλεξε τυχαία από αυτόν τον πίνακα
+			for (let i = 0; i < teachers.length; i++) {
+				// Διάλεξε τυχαίο index από τον πίνακα baseHues
+				const randomIndex = Math.floor(Math.random() * baseHues.length)
+				const hue = baseHues[randomIndex] + Math.random() * 10
+				// Αφαίρεσε την τιμή που χρησιμοποίησες για να μην ξαναεμφανιστεί
+				baseHues.splice(randomIndex, 1)
+				const saturation = 40 + Math.random() * 50   // 65–90%
+				const lightness = 50 + Math.random() * 20    // 35–65%
+				const color = hslToHex(hue, saturation, lightness)
+				const textColor = getContrastTextColor(color)
+
+				const teacherName = teachers[i].getElementsByTagName("Name")[0].textContent
+				teachersIndexList[teacherName] = i + 2
+				teachersColor[teacherName] = color
+				teachersTextColor[teacherName] = textColor
+			}
+
+			// Expose globally για το color picker
+			teachersColorGlobal = teachersColor
+			teachersTextColorGlobal = teachersTextColor
+			teachersIndexListGlobal = teachersIndexList
+
+			const tableRowNum = Object.keys(teachersIndexList).length + 2
+
+            // read teachers not available times
+            const teachersNotAvailable = xml.getElementsByTagName("ConstraintTeacherNotAvailableTimes");
+            const teachNotAvailable = [];
+            for (let i = 0; i < teachersNotAvailable.length; i++) {
+                const teacherNA = teachersNotAvailable[i].getElementsByTagName("Teacher")[0].textContent
+                const countNA = teachersNotAvailable[i].getElementsByTagName("Number_of_Not_Available_Times")[0].textContent
+                const timesNA = teachersNotAvailable[i].getElementsByTagName("Not_Available_Time")
+                rowNA = teachersIndexList[teacherNA]
+
+                for (let j = 0; j < timesNA.length; j++) {
+                    d = timesNA[j].getElementsByTagName("Day")[0].textContent
+                    h = timesNA[j].getElementsByTagName("Hour")[0].textContent
+                    colNA = daysIndexList[d] * NumOfHours + hoursIndexList[h] + 1
+                    teachNotAvailable.push({ 'r': rowNA, 'c': colNA })
+                }
+            }
+
+            // read activities
+            // read STUDENTS from ACTIVITIES so i don't care if students come FROM YEAR or GROUP or SUBGROUP
+            const activities = xml.getElementsByTagName("Activity");
+            const objAct = {}
+
+            for (let i = 0; i < activities.length; i++) {
+
+                // const excludeInactiveActivities is set in line 495
+                // if true we dont import inactive activities
+                if (excludeInactiveActivities) {
+                    // if activity Active = false bypass
+                    if (activities[i].getElementsByTagName("Active")[0].textContent !== 'true') continue
+                }
+
+                // teachers might be one or two so i make an array of them
+                const teachers = activities[i].getElementsByTagName("Teacher")
+                let teacherArray = []
+                for (let j = 0; j < teachers.length; j++) {
+                    teacherArray.push(teachers[j].textContent)
+                }
+                let teacherStr = teacherArray.join(' - ')
+
+                const subject = activities[i].getElementsByTagName("Subject")[0].textContent
+                const tmimata = activities[i].getElementsByTagName("Students")
+                // groups might be one or two so so i make an array of them
+                const tmimaArray = []
+                for (let j = 0; j < tmimata.length; j++) {
+                    tmimaArray.push(tmimata[j].textContent)
+                }
+                const tmima = tmimaArray.join(' ')
+
+                // read groups of Students in activities and create array of them
+                groupsArray = groupsArray.concat(tmimaArray)
+
+                const duration = activities[i].getElementsByTagName("Duration")[0].textContent
+                const totalDuration = activities[i].getElementsByTagName("Total_Duration")[0].textContent
+                const id = activities[i].getElementsByTagName("Id")[0].textContent
+
+                objAct[id] = {
+                    'duration': duration,
+                    'totalDuration': totalDuration,
+                    'tmimata': tmimaArray,
+                    'tmima': tmima,
+                    'teacher': teacherArray,
+                    'teacherStr': teacherStr,
+                    'subject': subject
+                }
+
+                if (!teachers.length) noTeacher = true
+            }
+
+            if (noTeacher) {
+                teachersIndexList['notAv'] = Object.keys(teachersIndexList).length + 2
+            }
+
+            // keep values of groupsArray only once ( unique)
+            let uniqueArrGroups = []
+            groupsArray.forEach(el => {
+                if (!uniqueArrGroups.includes(el)) {
+                    uniqueArrGroups.push(el)
+                }
+            })
+            // final groupsArray = sorted uniqueArrGroups
+            groupsArray = uniqueArrGroups.sort()
+
+            // read activities start times
+            const activitiesStartTimes = xml.getElementsByTagName("ConstraintActivityPreferredStartingTime");
+            const objActivitiesStartTimes = []
+
+            for (let i = 0; i < activitiesStartTimes.length; i++) {
+
+                // load only "Active = true" ConstraintActivityPreferredStartingTime
+                if (activitiesStartTimes[i].getElementsByTagName("Active")[0].textContent == "false") continue
+
+                const id = activitiesStartTimes[i].getElementsByTagName("Activity_Id")[0].textContent
+
+                // if activity Active = false is bypassed and there is no id
+                // so we don,t add the card
+                if (!objAct[id]) continue
+
+                const d = activitiesStartTimes[i].getElementsByTagName(NN_DAY)[0].textContent
+                const h = activitiesStartTimes[i].getElementsByTagName(NN_HOUR)[0].textContent
+                const teacherArr = objAct[id].teacher
+                // if teacher present
+                if (teacherArr.length) {
+                    // set row, col, data for every teacher 
+                    for (j = 0; j < teacherArr.length; j++) {
+                        const rowSet = teachersIndexList[teacherArr[j]]
+                        const colSet = daysIndexList[d] * NumOfHours + hoursIndexList[h] + 1
+                        objActivitiesStartTimes.push({
+                            'id': id,
+                            'r': rowSet,
+                            'c': colSet,
+                            'data': objAct[id],
+                            'color': teachersColor[teacherArr[j]]
+                        })
+                    }
+
+                } else {
+                    // no teacher
+                    const rowSet = teachersIndexList['notAv']
+                    const colSet = daysIndexList[d] * NumOfHours + hoursIndexList[h] + 1
+                    objActivitiesStartTimes.push({
+                        'id': id,
+                        'r': rowSet,
+                        'c': colSet,
+                        'data': objAct[id] //? objAct[id] : {}
+                    })
+
+                }
+            }
+
+            // -------- create table ------------
+            const table = document.getElementById("programTable");
+            const thead = table.tHead
+            const tbody = table.tBodies[0]
+            const tfoot = table.tFoot
+
+            let row = tfoot.insertRow()
+            for (i = 0; i < tableColNum; i++) {
+                let cell = row.insertCell()
+                cell.classList.add('footer', 'no-print', 'display-none')
+            }
+
+
+            // 1st row ------
+            row = thead.insertRow();
+
+			// Διάβασε το όνομα του σχολείου από το .fet
+			const institutionEl = xml.getElementsByTagName("Institution_Name")[0];
+			let institutionName = institutionEl ? institutionEl.textContent.trim() : '';
+
+			// Αν δεν βρέθηκε, ζήτα από τον χρήστη
+			if (!institutionName) {
+				const input = prompt('Το αρχείο δεν περιέχει όνομα σχολείου.\nΕισάγετε όνομα σχολείου:', '');
+				// Αν ο χρήστης πατήσει Cancel ή αφήσει κενό → "Σχολείο"
+				institutionName = (input && input.trim()) ? input.trim() : 'Σχολείο';
+			}
+
+            // title of table
+            cell = row.insertCell()
+            cell.rowSpan = 2
+			cell.textContent = institutionName;
+            cell.classList.add('mark-border')
+            cell.style.background = '#f5fbff'
+            cell.style.textAlign = 'center'
+            cell.style.fontSize = '18px'
+			cell.style.fontStretch = 'normal'
+			cell.style.fontWeight = 'bold'
+            cell.style.color = '#11496e'
+			// Προαιρετικά: αυτόματο σπάσιμο σε πολλές γραμμές
+			cell.style.whiteSpace = 'pre-line'
+			cell.style.wordBreak = 'break-word'            
+			// date names
+            for (let i = 0; i < days.length; i++) {
+                const dayShort = days[i].getElementsByTagName("Name")[0].textContent;
+                const dayLong = days[i].getElementsByTagName("Long_Name")[0].textContent;
+                const dateName = dayLong ? dayLong : dayShort;
+                let cell = row.insertCell()
+                cell.colSpan = NumOfHours
+                cell.textContent = dateName
+                cell.classList.add('text-center', 'day')
+                cell.classList.add('mark-border')
+                cell.style.cursor = 'pointer'
+                cell.title = 'Do not print'
+                cell.setAttribute('index', i + 1)
+            }
+			// --- προσθήκη επικεφαλίδων για τις δύο νέες στήλες ---
+			let thTotal = row.insertCell(); // στο τέλος της 1ης header γραμμής
+			thTotal.rowSpan = 2;
+			thTotal.textContent = "Σύνολο\nΩρών";
+			thTotal.classList.add('text-center', 'mark-border');
+
+			let thTarget = row.insertCell(); // στο τέλος της 1ης header γραμμής
+			thTarget.rowSpan = 2;
+			thTarget.textContent = "Σύμβαση\nΩρών";
+			thTarget.classList.add('text-center', 'mark-border');
+			
+
+            // 2nd row -----
+            row = thead.insertRow();
+
+            // hour names
+            for (let i = 0; i < days.length; i++) {
+                for (let j = 0; j < hours.length; j++) {
+                    const hourShort = hours[j].getElementsByTagName("Name")[0].textContent;
+                    const hourLong = hours[j].getElementsByTagName("Long_Name")[0].textContent;
+                    const glue = hourShort && hourLong ? '\n ' : '';
+                    const hourName = hourShort + glue + hourLong
+                    cell = row.insertCell()
+                    cell.textContent = hours[j].getElementsByTagName("Name")[0].textContent
+                    cell.title = hourName
+                    cell.classList.add('text-center', 'hour')
+
+                    if (j == hours.length - 1) {
+                        cell.classList.add('mark-border')
+                    }
+                }         
+			}
+			
+
+            // 3rd row and after -----
+            // enter schedule data
+
+            // 1st column - teacher names
+            for (let i = 0; i < Object.keys(teachersIndexList).length; i++) {
+                let row = tbody.insertRow();
+                cell = row.insertCell()
+                cell.textContent = Object.keys(teachersIndexList)[i] == 'notAv' ? '' : Object.keys(teachersIndexList)[i]
+                cell.classList.add('text-small')
+                cell.classList.add('mark-border')
+                // cells of schedule
+                for (let j = 0; j < days.length; j++) {
+                    for (let k = 0; k < hours.length; k++) {
+                        cell = row.insertCell()
+                        cell.classList.add('program')
+                        if (k == hours.length - 1) {
+                            cell.classList.add('mark-border')
+                        }
+                        // set to every cell values of day and hour to be accesible later
+                        cell.setAttribute('day', days[j].getElementsByTagName("Name")[0].textContent)
+                        cell.setAttribute('hour', hours[k].getElementsByTagName("Name")[0].textContent)
+                    }
+                }
+
+				//υπολογισμός totalHours (διαβάζει απευθείας το .fet XML αν υπάρχει)
+				const teacher = Object.keys(teachersIndexList)[i];
+				let totalHours = 0;
+
+				(function(){
+					const normalize = s => (s || '').normalize ? (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() : (s || '').toLowerCase().trim();
+
+					// Προσπάθησε να βρεις το XML document (πια συνηθισμένα ονόματα)
+					const possibleDocs = [
+						typeof xmlDoc !== 'undefined' ? xmlDoc : null,
+						typeof xml !== 'undefined' ? xml : null,
+						typeof fetXML !== 'undefined' ? fetXML : null,
+						typeof docXML !== 'undefined' ? docXML : null,
+						typeof xmlData !== 'undefined' ? xmlData : null
+					].filter(Boolean);
+
+					let activities = null;
+					if (possibleDocs.length > 0 && typeof possibleDocs[0].getElementsByTagName === 'function') {
+						activities = possibleDocs[0].getElementsByTagName('Activity');
+					} else if (teachers && teachers[0] && teachers[0].ownerDocument && typeof teachers[0].ownerDocument.getElementsByTagName === 'function') {
+						activities = teachers[0].ownerDocument.getElementsByTagName('Activity');
+					}
+
+					const targetNorm = normalize(teacher);
+
+					if (activities && activities.length > 0) {
+						// Χρήση του XML Activities (προτιμητέα)
+						for (let a = 0; a < activities.length; a++) {
+							try {
+								const activity = activities[a];
+								if (!activity) continue;
+
+								// Duration
+								const durationEl = activity.getElementsByTagName('Duration')[0];
+								const dur = durationEl ? parseInt(durationEl.textContent || durationEl.innerText || '0') : NaN;
+								if (isNaN(dur) || dur <= 0) continue;
+
+								// Teacher nodes
+								let teacherNames = [];
+								const teacherNodes = activity.getElementsByTagName('Teacher');
+								if (teacherNodes && teacherNodes.length > 0) {
+									for (let t = 0; t < teacherNodes.length; t++) {
+										if (teacherNodes[t].textContent && teacherNodes[t].textContent.trim()) {
+											teacherNames.push(normalize(teacherNodes[t].textContent));
+										}
+									}
+								} else {
+									// fallback: κάποιοι .fet έχουν <Teachers> με comma-separated string
+									const teachersParent = activity.getElementsByTagName('Teachers')[0];
+									if (teachersParent && teachersParent.textContent) {
+										teacherNames = teachersParent.textContent.split(',').map(s => normalize(s)).filter(Boolean);
+									}
+								}
+								if (teacherNames.length === 0) continue;
+
+								// Έλεγχος αν η δραστηριότητα είναι ενεργή (Active=true ή απουσιάζει)
+								const activeTag = activity.getElementsByTagName("Active")[0];
+								const isActive = !activeTag || activeTag.textContent.trim().toLowerCase() === "true";
+								if (!isActive) continue; // αγνόησε ανενεργές δραστηριότητες
+
+								// Αν ο τρέχων καθηγητής υπάρχει στη λίστα (χαλαρή σύγκριση)
+								const found = teacherNames.some(n => n === targetNorm);
+								if (found) {
+									totalHours += dur ;
+								}
+							} catch (e) {
+								// αγνόησε κατεστραμμένη activity και συνέχισε
+								continue;
+							}
+						}
+					} else {
+						// Fallback: χρήση objActivitiesStartTimes (όπως πριν) αλλά προσεκτικά, χωρίζοντας teacherStr
+						if (Array.isArray(objActivitiesStartTimes)) {
+							for (let k = 0; k < objActivitiesStartTimes.length; k++) {
+								const act = objActivitiesStartTimes[k];
+								if (!act || !act.data) continue;
+								const dur = parseInt(act.data.duration) || 0;
+								if (!dur) continue;
+								const teacherStr = (act.data.teacherStr || '').toString();
+								if (!teacherStr) continue;
+								const parts = teacherStr.split(',').map(s => normalize(s)).filter(Boolean);
+								if (parts.length === 0) continue;
+								const match = parts.some(p => p === targetNorm);
+								if (match) totalHours += dur / parts.length;
+							}
+						}
+					}
+				})();
+
+				// Υπολογισμός ωρών σύμβασης
+				let targetHours = "-";
+				for (let t = 0; t < teachers.length; t++) {
+					const tname = teachers[t].getElementsByTagName("Name")[0].textContent;
+					if (tname === teacher) {
+						const tn = teachers[t].getElementsByTagName("Target_Number_of_Hours")[0];
+						targetHours = tn ? parseInt(tn.textContent) : "-";
+						break;
+					}
+				}
+				//τοποθέτηση δύο κελιών στο τέλος της γραμμής
+				let totalCell = row.insertCell();
+				totalCell.textContent = totalHours;
+				totalCell.classList.add('text-center', 'mark-border', 'no-drop-column');
+				totalCell.style.fontWeight = 'bold';
+				totalCell.style.textAlign = 'center';
+				totalCell.style.backgroundColor = '#eef7ff';
+				totalCell.classList.add('mark-border');
+				let targetCell = row.insertCell();
+				targetCell.textContent = targetHours;
+				targetCell.classList.add('text-center', 'mark-border', 'no-drop-column');
+				targetCell.style.fontWeight = 'bold';
+				targetCell.style.textAlign = 'center';
+				targetCell.style.backgroundColor = '#fff5e0';
+				targetCell.classList.add('mark-border');
+				// (προαιρετικά) χρωματισμός αν κάτω/πάνω από στόχο
+				if (targetHours !== '-' && !isNaN(targetHours)) {
+					if (totalHours < targetHours) totalCell.style.backgroundColor = '#ffd6d6';
+					else if (totalHours > targetHours) totalCell.style.backgroundColor = '#d6ffd6';
+					}
+                
+				// warehouse
+                cell = row.insertCell()
+                cell.classList.add('warehouse')
+                cell.classList.add('no-print')
+                warehouseColumnIndex = cell.cellIndex
+
+            }
+
+            // mark not available hours of teacher
+            for (let i = 0; i < teachNotAvailable.length; i++) {
+                cell = table.rows[teachNotAvailable[i].r].cells[teachNotAvailable[i].c]
+                cell.classList.add("not-av")
+
+            }
+
+            // insert activities
+            for (let i = 0; i < objActivitiesStartTimes.length; i++) {
+                // get cell
+                row = table.rows[objActivitiesStartTimes[i].r]
+                cell = row.cells[objActivitiesStartTimes[i].c]
+
+                // delete from activities if is set objActivitiesStartTimes
+                delete objAct[objActivitiesStartTimes[i].id]
+
+                // create the cards (spans)
+                var tmimaSpan = document.createElement("span");
+                tmimaSpan.setAttribute("class", "drag-span display-inline-block");
+                tmimaSpan.id = objActivitiesStartTimes[i].id;
+                tmimaSpan.setAttribute("tmima", objActivitiesStartTimes[i].data.tmimata);
+                tmimaSpan.setAttribute("teacher", objActivitiesStartTimes[i].data.teacherStr);
+				tmimaSpan.setAttribute("row", row.rowIndex);
+                tmimaSpan.setAttribute("col", cell.cellIndex);
+                tmimaSpan.innerHTML = '<span class="top-span display-none" style="font-size:0.6rem">' + objActivitiesStartTimes[i].data.subject + '</span>' + '<span class="bottom-span">' + objActivitiesStartTimes[i].data.tmima + '</span>';
+                tmimaSpan.setAttribute('info', objActivitiesStartTimes[i].data.tmima + " - " + objActivitiesStartTimes[i].data.duration + '/' + objActivitiesStartTimes[i].data.totalDuration + "\n" + objActivitiesStartTimes[i].data.subject + "\n" + objActivitiesStartTimes[i].data.teacherStr)
+                tmimaSpan.draggable = true;
+                if (showColors) tmimaSpan.style.background = objActivitiesStartTimes[i].color
+                // add card to cell
+                cell.appendChild(tmimaSpan)
+                // set data to cell
+                cell.id = objActivitiesStartTimes[i].id
+                cell.setAttribute('tmima', objActivitiesStartTimes[i].data.tmimata)
+
+                // make cards wide to simulate duration
+                // all cards have duration 1
+                tmimaSpan.setAttribute("w", 1);
+                // if duration > 1 set width
+                clspn = objActivitiesStartTimes[i].data.duration
+                if (clspn > 1) {
+                    tmimaSpan.classList.add("w-" + clspn)
+                    tmimaSpan.setAttribute("w", clspn);
+                    index = cell.cellIndex
+                    for (j = 0; j < clspn; j++) {
+                        // set group to all cells that occupies the card
+                        row.cells[index + j].id = objActivitiesStartTimes[i].id
+                        // set start - stop indexes for loop through cells
+                        // a triple wide card occupies three cells
+                        // cell 1  => start = 0,  stop = 2
+                        // cell 2  => start = -1, stop = 1
+                        // cell 3 => start = -2,  stop = 0
+                        // that way i know in which cell the card belongs
+                        row.cells[index + j].setAttribute('tmima', objActivitiesStartTimes[i].data.tmimata)
+                        row.cells[index + j].setAttribute('start', 0 - j)
+                        row.cells[index + j].setAttribute('stop', clspn - 1 - j)
+                    }
+
+                }
+            }
+
+            // if Activities left in objAct means that 
+            // these activities have no preferedStartingTime
+            // so they must be put to warehouse
+            for (let index of Object.keys(objAct)) {
+                for (i = 0; i < objAct[index].teacher.length; i++) {
+                    // create the cards (spans)
+                    var tmimaSpan = document.createElement("span");
+                    tmimaSpan.setAttribute("class", "drag-span display-inline-block");
+                    tmimaSpan.id = index;
+                    tmimaSpan.setAttribute("tmima", objAct[index].tmimata);
+					tmimaSpan.setAttribute("teacher", objAct[index].teacherStr);
+                    tmimaSpan.setAttribute("row", teachersIndexList[objAct[index].teacher[i]]);
+                    tmimaSpan.setAttribute("col", warehouseColumnIndex);
+                    tmimaSpan.innerHTML = '<span class="top-span display-none" style="font-size:0.4rem">' + objAct[index].subject + '</span>' + '<span class="bottom-span">' + objAct[index].tmima + '</span>';
+                    tmimaSpan.setAttribute('info', objAct[index].tmima + " - " + objAct[index].duration + '/' + objAct[index].totalDuration + "\n" + objAct[index].subject + "\n" + objAct[index].teacherStr)
+                    tmimaSpan.draggable = true;
+                    if (showColors) tmimaSpan.style.background = teachersColor[objAct[index].teacher[i]]
+
+                    tmimaSpan.setAttribute("w", 1);
+                    // if duration > 1 set width
+                    clspn = objAct[index].duration
+                    if (clspn > 1) {
+                        tmimaSpan.classList.add("w-" + clspn)
+                        tmimaSpan.setAttribute("w", clspn);
+                    }
+                    // add card to cell
+                    table.rows[tmimaSpan.getAttribute('row')].cells[warehouseColumnIndex].appendChild(tmimaSpan)
+
+                }
+
+            }
+
+            eventListeners()
+            saveTable(table)
+			initDayButtonsFromTable();
+        }
+
+        // add eventListeners
+        // should appended every time reconstruct table from history
+        function eventListeners() {
+            const table = document.getElementById('programTable')
+            table.addEventListener('dragover', handleDragOver);
+            table.addEventListener('drop', handleDrop);
+
+            const spans = Array.from(document.querySelectorAll(`span.drag-span`))
+            spans.forEach(sp => {
+                sp.addEventListener('dragstart', handleDragStart);
+                sp.addEventListener('dragend', handleDragEnd);
+                sp.ondblclick = () => handleDoubleClick(sp.id)
+                sp.onmouseover = function () {
+                    document.getElementById('whiteboard').innerText = this.getAttribute('info') ? this.getAttribute('info').replace(', ', '\n') : '';
+                    document.getElementById('whiteboard').classList.remove('display-none');
+					// Αν το showSameCards είναι ενεργό, πρόσθεσε highlight
+					if (showSameCards) addHighlightSameGroup(this)
+                };
+                sp.onmouseout = function () {
+                    document.getElementById('whiteboard').innerText = '';
+                    document.getElementById('whiteboard').classList.add('display-none');
+					// Αν το showSameCards είναι ενεργό, αφαίρεσε highlight
+					if (showSameCards) removeHighlightSameGroup()					
+                };
+            })
+
+            const dayRowCells = Array.from(document.querySelectorAll(`.day`))
+            dayRowCells.forEach(d => {
+                d.addEventListener('click', () => dayNotPrint(d.getAttribute('index')))
+
+            })
+
+            const hourColCells = Array.from(document.querySelectorAll(`.hour`))
+            hourColCells.forEach(c => {
+                c.onmouseover = function () {
+                    document.getElementById('whiteboard').innerText = this.getAttribute('info') ? this.getAttribute('info').replace(', ', '\n') : '';
+                    document.getElementById('whiteboard').classList.remove('display-none');
+                };
+                c.onmouseout = function () {
+                    document.getElementById('whiteboard').innerText = '';
+                    document.getElementById('whiteboard').classList.add('display-none');
+                };
+
+            })
+			
+			// Απόκρυψη καθηγητων
+			const teacherNameCells = Array.from(document.querySelectorAll(`td.text-small, td.teacher-name`))
+			teacherNameCells.forEach(cell => {
+				if (!cell.hasAttribute('data-listener')) {
+					cell.addEventListener('click', () => teacherNotPrint(cell))
+					cell.setAttribute('data-listener', 'true')
+				}
+				cell.style.cursor = 'pointer'
+				cell.title = 'Κλικ για απόκρυψη/εμφάνιση στην εκτύπωση'
+			})
+
+            // clear backgrounds might be present ( and saved) when table was saved
+            const spotLastCell = Array.from(document.querySelectorAll('.spot-last-cell'))
+            spotLastCell.forEach(c => c.classList.remove('spot-last-cell'))
+
+            const spotExpelled = Array.from(document.querySelectorAll('.spot-expelled'))
+            spotExpelled.forEach(c => c.classList.remove('spot-expelled'))
+
+            const highlighted = Array.from(document.querySelectorAll('.highlight'))
+            highlighted.forEach(c => c.classList.remove('highlight'))
+
+            markBorder()
+            findMissingTmimata()
+        }
+
+        // saves table to sessionStorage
+        function saveTable(table) {
+
+            // set variables to session to track indexes
+            const keepTables = sessionStorage.getItem("keep-tables")
+            let first = sessionStorage.getItem("first-table-index")
+            const last = sessionStorage.getItem("last-table-index")
+            const current = sessionStorage.getItem("current-table-index")
+
+            // if isset keepTables and the number of entries > keepTables remove items from beggining of stack
+            if (keepTables) {
+                if (last - first > keepTables) {
+                    sessionStorage.removeItem('table#' + first)
+                    first++
+                    sessionStorage.setItem('first-table-index', first)
+                }
+            } else {
+                sessionStorage.setItem('first-table-index', 0)
+            }
+
+            // calculate newIndex
+            let newIndex = 0
+            if (current) {
+                newIndex = +current + +1
+            }
+
+            // save table
+            // if memory is full it will throw error
+            try {
+                const tableJson = serializeDOM(table)
+                sessionStorage.setItem('table#' + newIndex, JSON.stringify(tableJson))
+                // set index after table saved
+                // if memory full program throws exception in previous line so the indexes won't change
+                sessionStorage.setItem('current-table-index', newIndex)
+                sessionStorage.setItem('last-table-index', newIndex)
+            } catch {
+                // memory full
+                // set keepTables to safe num newIndex - 2
+                sessionStorage.setItem('keep-tables', newIndex - 2)
+            }
+
+            // if we are back in history and make new moves of cards
+            // we delete all history after last current history
+            if (newIndex !== last) {
+                for (i = last; i > newIndex; i--) {
+                    sessionStorage.removeItem('table#' + i)
+                }
+            }
+            showHidePrevNext()
+        }
+
+        //  Determine if a color is a light color
+        //  @see https://gist.github.com/krabs-github/ec56e4f1c12cddf86ae9c551aa9d9e04
+        function isLightColor(color) {
+            let r, g, b;
+
+            // Check the format of the color, HEX or RGB?
+            if (color.match(/^rgb/)) {
+                // If HEX --> store the red, green, blue values in separate variables
+                const rgb = color.match(
+                    /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/
+                );
+
+                r = rgb[1];
+                g = rgb[2];
+                b = rgb[3];
+            } else {
+                // If RGB --> Convert it to HEX: http://gist.github.com/983661
+                const hexColor = +(
+                    '0x' + color.slice(1).replace(color.length < 5 && /./g, '$&$&')
+                );
+
+                r = hexColor >> 16;
+                g = (hexColor >> 8) & 255;
+                b = hexColor & 255;
+            }
+
+            // HSP equation from http://alienryderflex.com/hsp.html
+            const hsp = Math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b));
+
+            // Using the HSP value, determine whether the color is light or dark
+            // > 127.5 is 'light', <= 127.5 is 'dark'
+
+            //return hsp > 127.5;
+            return hsp > 150;
+        }
+
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            draggedElement.classList.add('dragging');
+			
+			// ΠΡΟΣΘΕΣΕ ΚΛΑΣΗ ΣΤΟ ΣΥΡΟΜΕΝΟ ΣΤΟΙΧΕΙΟ
+			document.querySelectorAll(`span.drag-span[id="${draggedElement.id}"]`).forEach(sp => {
+				sp.classList.add('dragging');
+			})
+			
+            // set background green at allowed for drop row
+            setBackgroundGreen(draggedElement)
+            // change drag status of cards so i can target in background cells
+            const spans = Array.from(document.querySelectorAll(`span.drag-span`))
+            spans.forEach(el => {
+                if (el.id !== draggedElement.id) el.classList.add('no-drag')
+            })
+        }
+
+        function handleDragEnd(e) {
+			// ΑΦΑΙΡΕΣΕ ΟΛΕΣ ΤΙΣ ΚΛΑΣΕΙΣ ΕΠΙΣΗΜΑΝΣΗΣ
+			document.querySelectorAll('.dragging, .conflicting').forEach(el => {
+				el.classList.remove('dragging', 'conflicting')
+			})
+			
+            // set card drag status to default
+            const spans = Array.from(document.querySelectorAll(`span.drag-span`))
+            spans.forEach(el => el.classList.remove('no-drag'))
+
+			 // Καθάρισε το whiteboard
+			const whiteboard = document.getElementById('whiteboard')
+			whiteboard.innerText = ''
+			whiteboard.classList.add('display-none')
+			whiteboard.style.left = '50%'
+			whiteboard.style.right = 'auto'
+			whiteboard.style.top = '5px'
+			whiteboard.style.transform = 'translateX(-50%)'
+			
+			removeBackground(draggedElement)
+			clearElement(draggedElement)
+       }
+
+		function clearAffected() {
+			// Αφαίρεσε όλες τις κλάσεις επισημανσης από spans
+			document.querySelectorAll('.conflicting, .dragging, .same-tmima, .same-mathima').forEach(el => {
+				el.classList.remove('conflicting', 'dragging', 'same-tmima', 'same-mathima')
+			})
+			
+			// Αφαίρεσε κλάσεις από γραμμές
+			document.querySelectorAll('tr.conflicting').forEach(el => {
+				el.classList.remove('conflicting')
+			})
+		}
+
+		function handleDragOver(e) {
+			e.preventDefault();
+			
+			// Αν το ποντίκι είναι πάνω από το whiteboard, μην κάνεις τίποτα
+			if (e.target.closest('#whiteboard')) {
+				return
+			}
+    
+			const cell = e.target.closest('td');
+			if (!cell) return
+			
+			// Μην κάνεις highlight σε στήλες συνόλων
+			if (cell.classList.contains('no-drop-column')) {
+				return
+			}
+			
+			// Αφαίρεσε highlight από προηγούμενο κελί
+			if (lastHighlightedCell) {
+				lastHighlightedCell.classList.remove('highlight')
+			}
+			
+			// Πρόσθεσε highlight στο νέο κελί
+			cell.classList.add('highlight')
+			lastHighlightedCell = cell
+			
+			// Βρες επηρεαζόμενα κελιά και κάρτες
+			const affectedCells = getAffectedCells(cell)
+			const affectedSpans = getAffectedSpans(affectedCells)
+			
+			// ΑΦΑΙΡΕΣΕ ΠΡΟΗΓΟΥΜΕΝΕΣ ΕΠΙΣΗΜΑΝΣΕΙΣ
+			document.querySelectorAll('.conflicting, .dragging').forEach(el => {
+				el.classList.remove('conflicting', 'dragging')
+			})
+			
+			// ΠΡΟΣΘΕΣΕ ΕΠΙΣΗΜΑΝΣΗ ΣΤΙΣ ΕΠΗΡΕΑΖΟΜΕΝΕΣ ΚΑΡΤΕΣ
+			affectedSpans.forEach(sp => {
+				sp.classList.add('conflicting')
+			})
+    
+			// Εμφάνισε μήνυμα
+			const message = getMessage(cell, affectedSpans)
+			if (message) {
+				const whiteboard = document.getElementById('whiteboard')
+				whiteboard.innerText = message
+				whiteboard.classList.remove('display-none')
+				
+				// ΜΕΤΑΚΙΝΗΣΕ ΤΟ WHITEBOARD ΔΙΠΛΑ ΣΤΟ ΠΟΝΤΙΚΙ
+				const mouseX = e.clientX
+				const mouseY = e.clientY
+				const windowWidth = window.innerWidth
+				
+				// Τοποθέτησε το whiteboard δεξιά ή αριστερά ανάλογα με τη θέση του ποντικιού
+				if (mouseX > windowWidth / 2) {
+					// Ποντίκι δεξιά - βάλε whiteboard αριστερά
+					whiteboard.style.left = '20px'
+					whiteboard.style.right = 'auto'
+					whiteboard.style.top = (mouseY - 100) + 'px'
+				} else {
+					// Ποντίκι αριστερά - βάλε whiteboard δεξιά
+					whiteboard.style.left = 'auto'
+					whiteboard.style.right = '20px'
+					whiteboard.style.top = (mouseY - 100) + 'px'
+				}
+				whiteboard.style.transform = 'none' // Αφαίρεσε το κεντράρισμα
+			} else {
+				document.getElementById('whiteboard').classList.add('display-none')
+			}
+			
+			// Αφαίρεσε highlight μετά από 300ms
+			setTimeout(() => {
+				if (cell) {
+					cell.classList.remove('highlight')
+					if (lastHighlightedCell === cell) {
+						lastHighlightedCell = null
+					}
+				}
+			}, 300)
+		}
+
+        // clean things after drop
+        function clearElement(el) {
+            el.classList.remove('dragging');
+            el = null;
+        }
+
+        function handleDrop(e) {
+			e.preventDefault();
+
+			// Αν το drop γίνεται στο whiteboard, ακύρωσε
+			if (e.target.closest('#whiteboard')) {
+				return
+			}
+
+			const cell = e.target.closest('td');
+			if (!(cell && draggedElement)) { return }
+
+			const table = cell.parentElement.parentElement.parentElement
+
+			// Έλεγχος για στήλες συνόλων
+			if (cell.classList.contains('no-drop-column')) {
+				console.log('Δεν επιτρέπεται η τοποθέτηση στις στήλες Σύνολο Ωρών ή Σύμβαση Ωρών');
+				removeBackground(draggedElement)
+				clearElement(draggedElement)
+				return
+			}
+
+			const columnIndex = cell.cellIndex
+			const dragElId = draggedElement.id
+			const dragElTmima = draggedElement.getAttribute('tmima').split(',')
+			const dragElRow = draggedElement.getAttribute('row')
+			const dragElCol = draggedElement.getAttribute('col')
+			const dragElSize = draggedElement.getAttribute('w')
+
+			// set card drag status to default
+			const spans = Array.from(document.querySelectorAll(`span.drag-span`))
+			spans.forEach(el => el.classList.remove('no-drag'))
+			
+			const cellId = +cell.id + +cell.getAttribute('start')
+
+			// if drop is in the old cell that drag started i do nothing
+			if (dragElId == cellId) {
+				removeBackground(draggedElement)
+				clearElement(draggedElement)
+				return
+			}
+
+			// if card size is 2 or 3 i prevent droping in last hours
+			let lastHoursAllowance = columnIndex % hoursLength
+			if (lastHoursAllowance == 0) {
+				lastHoursAllowance = 1
+			} else {
+				lastHoursAllowance = hoursLength - lastHoursAllowance + 1
+			}
+			if (dragElSize > lastHoursAllowance) {
+				removeBackground(draggedElement)
+				clearElement(draggedElement)
+				return
+			}
+
+			// ΒΡΕΣ ΕΠΗΡΕΑΖΟΜΕΝΑ ΚΕΛΙΑ ΚΑΙ ΜΗΝΥΜΑ
+			const affectedCells = getAffectedCells(cell)
+			const affectedSpans = getAffectedSpans(affectedCells)
+			const conflictMessage = getMessage(cell, affectedSpans)  // ΝΕΟ όνομα μεταβλητής
+
+			// Αν υπάρχουν συγκρούσεις, ζήτα επιβεβαίωση
+			if (conflictMessage) {
+				const ok = confirm(conflictMessage)
+				if (!ok) {
+					removeBackground(draggedElement)
+					clearElement(draggedElement)
+					return
+				}
+			}
+
+           /* // 1st round
+            // creating message for user checking what should do at 2nd round
+
+            let message = []
+
+            // get all cards with the same id as an array and loop
+            const newDraggedElements1 = Array.from(document.querySelectorAll(`span[id="${draggedElement.id}"]`))
+            newDraggedElements1.forEach(el => {
+                let elRow = el.getAttribute('row')
+                const newCell = table.rows[elRow].cells[columnIndex]
+                // if drop cell has id, that means that a card is placed in it
+                if (newCell.id) {
+                    const existingElements = Array.from(document.querySelectorAll(`span[id="${newCell.id}"]`))
+                    existingElements.forEach(el => {
+                        const apo = +el.parentElement.getAttribute('hour') + +el.parentElement.getAttribute('start')
+                        const eos = +el.parentElement.getAttribute('hour') + +el.parentElement.getAttribute('stop')
+                        const oraStr = apo == eos ? apo + ' hour' : apo + '-' + eos + ' hours';
+                        message.push('\n' + el.parentElement.parentElement.cells[0].textContent + '      ' + oraStr + '      ' + el.getAttribute('tmima').replace(",", " "))
+                    })
+                }
+
+                // if card size is 2 or 3 i check also the next cells if they have cards
+                for (i = 0; i < dragElSize; i++) {
+                    if (columnIndex == warehouseColumnIndex) { break }
+                    const newCell = table.rows[elRow].cells[+columnIndex + +i]
+                    // if next cell has id, that means that a card is placed in it
+                    if (newCell.id) {
+                        const existingElements = Array.from(document.querySelectorAll(`span[id="${newCell.id}"]`))
+                        existingElements.forEach(el => {
+                            const apo = +el.parentElement.getAttribute('hour') + +el.parentElement.getAttribute('start')
+                            const eos = +el.parentElement.getAttribute('hour') + +el.parentElement.getAttribute('stop')
+                            const oraStr = apo == eos ? apo + ' hour' : apo + '-' + eos + ' hours';
+                            message.push('\n' + el.parentElement.parentElement.cells[0].textContent + '      ' + oraStr + '      ' + el.getAttribute('tmima').replace(",", " "))
+                        })
+                    }
+                }
+
+            })
+
+            // check all the others cells in affected columns if they have the same students-division
+            dragElTmima.forEach(tm => {
+                const otherCells = Array.from(document.querySelectorAll(`td[tmima*="${tm}"]`))
+                    .filter(el => el.cellIndex >= columnIndex && el.cellIndex < +columnIndex + +dragElSize && el.id !== draggedElement.id)
+
+                otherCells.forEach(c => {
+                    if (!c.id) { return }
+                    const cellsClear = Array.from(document.querySelectorAll(`td[id="${c.id}"]`))
+
+                    cellsClear.forEach(el => {
+                        // if they contain card the card should be removed
+                        if (el.firstChild) {
+                            const apo = +el.getAttribute('hour').replace(/[^0-9]/g, "") + +el.getAttribute('start')
+                            const eos = +el.getAttribute('hour').replace(/[^0-9]/g, "") + +el.getAttribute('stop')
+                            const oraStr = apo == eos ? apo + ' hour' : apo + '-' + eos + ' hours';
+                            message.push('\n' + el.parentElement.cells[0].textContent + '      ' + oraStr + '      ' + el.getAttribute('tmima').replace(",", " "))
+                        }
+                    })
+
+                })
+
+            })
+            // end of 1st round
+
+            // ask user to confirm
+            message = Array.from(new Set(message))
+            if (message.length) {
+                var ok = confirm('Conflicts:\n' + message + '\n\nPlease confirm.')
+                if (!ok) {
+                    removeBackground(draggedElement)
+                    return
+                }
+            }*/
+
+            // 2nd round
+            // time for actions
+
+            // clean all old cells of the dragged card 
+            const cellsClear = Array.from(document.querySelectorAll(`td[id="${dragElId}"]`))
+            cellsClear.forEach(el => {
+                el.removeAttribute('id')
+                el.removeAttribute('tmima')
+                el.removeAttribute('start')
+                el.removeAttribute('stop')
+                el.classList.add('spot-last-cell');
+                setTimeout(() => el.classList.remove('spot-last-cell'), spotExpellDuration);
+            })
+
+            // get all cards with the same id as an array and loop
+            const newDraggedElements = Array.from(document.querySelectorAll(`span[id="${draggedElement.id}"]`))
+            newDraggedElements.forEach(spel => {
+                let elRow = spel.getAttribute('row')
+                const newCell = table.rows[elRow].cells[columnIndex]
+                spel.setAttribute('col', columnIndex)
+                // if drop cell has id, that means that a card is placed in it and should be moved to warehouse
+                if (newCell.id) {
+                    const existingElements = Array.from(document.querySelectorAll(`span[id="${newCell.id}"]`))
+                    existingElements.forEach(exel => {
+                        exel.setAttribute('col', warehouseColumnIndex)
+                        exel.classList.remove('warn-span')
+                        table.rows[exel.getAttribute('row')].cells[warehouseColumnIndex].appendChild(exel)
+                    })
+                    // clear all cells that had the card from the data
+                    const existingElementsCells = Array.from(document.querySelectorAll(`td[id="${newCell.id}"]`))
+                    existingElementsCells.forEach(exelcell => {
+                        exelcell.removeAttribute('id')
+                        exelcell.removeAttribute('tmima')
+                        exelcell.removeAttribute('start')
+                        exelcell.removeAttribute('stop')
+                        exelcell.classList.add('spot-expelled');
+                        setTimeout(() => exelcell.classList.remove('spot-expelled'), spotExpellDuration);
+                    })
+                }
+                // append the card to drop cell
+                newCell.appendChild(spel)
+
+                let chkNotAvailableCells = false
+
+                // set data to cells depending on card size
+                for (i = 0; i < dragElSize; i++) {
+                    // if drop is in warehouse no need to do anything of these
+                    if (columnIndex == warehouseColumnIndex) { break }
+
+                    // get cell
+                    const newCell = table.rows[elRow].cells[+columnIndex + +i]
+
+                    // if not availiable i will mark card later
+                    if (newCell.classList.contains('not-av')) { chkNotAvailableCells = true }
+
+                    // if cell contains other card i send it to warehouse
+                    if (newCell.id) {
+                        const existingElements = Array.from(document.querySelectorAll(`span[id="${newCell.id}"]`))
+                        existingElements.forEach(el => {
+                            el.setAttribute('col', warehouseColumnIndex)
+                            el.classList.remove('warn-span')
+                            table.rows[el.getAttribute('row')].cells[warehouseColumnIndex].appendChild(el)
+                        })
+                        // remove data attributes from cells that contained previous card 
+                        const existingElementsCells = Array.from(document.querySelectorAll(`td[id="${newCell.id}"]`))
+                        existingElementsCells.forEach(exelcell => {
+                            exelcell.removeAttribute('id')
+                            exelcell.removeAttribute('tmima')
+                            exelcell.removeAttribute('start')
+                            exelcell.removeAttribute('stop')
+                            exelcell.classList.add('spot-expelled');
+                            setTimeout(() => exelcell.classList.remove('spot-expelled'), spotExpellDuration);
+                        })
+                    }
+                    // set data attributes to new cells
+                    newCell.setAttribute('id', draggedElement.id)
+                    newCell.setAttribute('tmima', dragElTmima)
+                    newCell.setAttribute('start', 0 - i)
+                    newCell.setAttribute('stop', dragElSize - 1 - i)
+
+                }
+
+                // mark card if droped in not available teacher time cell
+                if (chkNotAvailableCells) {
+                    spel.classList.add('warn-span')
+                } else {
+                    spel.classList.remove('warn-span')
+                }
+            })
+
+
+            // find all other cells with the same group in columns affected
+            dragElTmima.forEach(tm => {
+                const otherCells = Array.from(document.querySelectorAll(`td[tmima*="${tm}"]`))
+                    .filter(el => el.cellIndex >= columnIndex && el.cellIndex < +columnIndex + +dragElSize && el.id !== draggedElement.id)
+
+                otherCells.forEach(c => {
+                    // have no id -> do nothing
+                    if (!c.id) { return }
+
+                    // get all cells with id that belong to previous card
+                    const cellsClear = Array.from(document.querySelectorAll(`td[id="${c.id}"]`))
+
+                    cellsClear.forEach(el => {
+                        // if card is present i send it in warehouse
+                        if (el.firstChild) {
+                            el.firstChild.setAttribute('col', warehouseColumnIndex)
+                            table.rows[el.firstChild.getAttribute('row')].cells[warehouseColumnIndex].appendChild(el.firstChild)
+                        }
+                        // clean data attributes
+                        el.removeAttribute('id')
+                        el.removeAttribute('tmima')
+                        el.removeAttribute('start')
+                        el.removeAttribute('stop')
+                        el.classList.add('spot-expelled');
+                        setTimeout(() => el.classList.remove('spot-expelled'), spotExpellDuration);
+                    })
+
+                })
+
+            })
+
+            removeBackground(draggedElement)
+            clearElement(draggedElement)
+            // end od 2nd round
+
+            findMissingTmimata()
+            saveTable(table)
+        }
+
+		function findMissingTmimata() {
+			const table = document.getElementById('programTable');
+
+			if (!table || !table.tBodies.length) return;
+
+			// find missing groups for every column
+			for (let i = 1; i < table.tBodies[0].rows[0].cells.length - 1; i++) {
+				// start with full group array for every column
+				let colGroupsArray = groupsArray.slice(); // copy
+				// at every row
+				for (let j = 0; j < table.tBodies[0].rows.length; j++) {
+					// get group
+					let toRemove = table.tBodies[0].rows[j].cells[i].getAttribute('tmima');
+					// if group present i remove it from array
+					if (toRemove) {
+						toRemove = toRemove.split(',');
+						colGroupsArray = colGroupsArray.filter((el) => !toRemove.includes(el));
+					}
+				}
+
+				// get safely references to header and footer cells
+				const headRow2 = table.tHead?.rows[1];
+				const footRow = table.tFoot?.rows[0];
+				const headCell = headRow2 && headRow2.cells[i - 1] ? headRow2.cells[i - 1] : null;
+				const footCell = footRow && footRow.cells[i] ? footRow.cells[i] : null;
+
+				// if groups left in array set thead and tfoot to inform user
+				if (colGroupsArray.length) {
+					if (showFooter && headCell) {
+						headCell.style.background = '#eeeeee';
+						headCell.setAttribute('info', 'groups with no activity\n' + colGroupsArray);
+					} else if (headCell) {
+						headCell.style.background = '';
+						headCell.setAttribute('info', '');
+					}
+					if (footCell) footCell.textContent = colGroupsArray;
+				} else {
+					if (headCell) {
+						headCell.style.background = '';
+						headCell.setAttribute('info', '');
+					}
+					if (footCell) footCell.textContent = '';
+				}
+			}
+		}
+       
+	   
+	   /* function findMissingTmimata() {
+            const table = document.getElementById('programTable')
+
+            // find missing groups for every column
+            for (i = 1; i < table.tBodies[0].rows[0].cells.length - 1; i++) {
+                // start with full group array for every column
+                let colGroupsArray = groupsArray
+                // at every row
+                for (j = 0; j < table.tBodies[0].rows.length; j++) {
+                    // get group
+                    let toRemove = table.tBodies[0].rows[j].cells[i].getAttribute('tmima')
+                    // if group present i remove it from array
+                    if (toRemove) {
+                        toRemove = toRemove.split(',')
+                        colGroupsArray = colGroupsArray.filter((el) => !toRemove.includes(el));
+                    }
+
+                }
+
+                // if groups left in array set thead and tfoot to inform user
+                if (colGroupsArray.length) {
+                    if (showFooter) {
+                        table.tHead.rows[1].cells[i - 1].style.background = '#eeeeee'
+                        table.tHead.rows[1].cells[i - 1].setAttribute('info', 'groups with no activity\n' + colGroupsArray)
+                    } else {
+                        table.tHead.rows[1].cells[i - 1].style.background = ''
+                        table.tHead.rows[1].cells[i - 1].setAttribute('info', '')
+                    }
+                    table.tFoot.rows[0].cells[i].textContent = colGroupsArray
+                } else {
+                    table.tHead.rows[1].cells[i - 1].style.background = ''
+                    table.tHead.rows[1].cells[i - 1].setAttribute('info', '')
+                    table.tFoot.rows[0].cells[i].textContent = ''
+                }
+            }
+
+        }*/
+
+		// swaps print-noprint for specific day
+		function dayNotPrint(day) {
+			const table = document.getElementById('programTable')
+			const dayIndex = parseInt(day);
+			
+			// Υπολογισμός των στηλών που αντιστοιχούν σε αυτή την ημέρα
+			const startCol = (dayIndex - 1) * hoursLength + 1;
+			const endCol = dayIndex * hoursLength;
+			
+			// Ελεγξε αν η μέρα είναι ήδη κρυμμένη
+			const isHidden = table.tHead.rows[0].cells[dayIndex].classList.contains('hidden-day');
+			
+			if (isHidden) {
+				// ΕΜΦΑΝΙΣΗ της ημέρας - αφαίρεσε hidden-day από ΟΛΑ
+				for (let hourOffset = 0; hourOffset < hoursLength; hourOffset++) {
+					const colIndex = (dayIndex - 1) * hoursLength + hourOffset;
+					
+					// header ημέρας (πρώτη γραμμή)
+					table.tHead.rows[0].cells[dayIndex].classList.remove('hidden-day');
+					
+					// header ώρας (δεύτερη γραμμή)
+					const hourHeader = table.tHead.rows[1].cells[colIndex];
+					hourHeader.classList.remove('hidden-day');
+					
+					// κελιά σώματος
+					for (let row = 0; row < table.tBodies[0].rows.length; row++) {
+						const bodyCell = table.tBodies[0].rows[row].cells[colIndex + 1];
+						bodyCell.classList.remove('hidden-day');
+					}
+				}
+			} else {
+				// ΑΠΟΚΡΥΨΗ της ημέρας - πρόσθεσε hidden-day σε ΟΛΑ
+				for (let hourOffset = 0; hourOffset < hoursLength; hourOffset++) {
+					const colIndex = (dayIndex - 1) * hoursLength + hourOffset;
+					
+					// header ημέρας (πρώτη γραμμή)
+					table.tHead.rows[0].cells[dayIndex].classList.add('hidden-day');
+					
+					// header ώρας (δεύτερη γραμμή)
+					const hourHeader = table.tHead.rows[1].cells[colIndex];
+					hourHeader.classList.add('hidden-day');
+					
+					// κελιά σώματος
+					for (let row = 0; row < table.tBodies[0].rows.length; row++) {
+						const bodyCell = table.tBodies[0].rows[row].cells[colIndex + 1];
+						bodyCell.classList.add('hidden-day');
+					}
+				}
+			}
+			
+			// Ενημέρωσε το κουμπί
+			updateDayButton(dayIndex);
+			
+			// Ενημέρωσε τους πίνακες εκτύπωσης
+			updatePrintTablesVisibility();
+		}
+
+        /* Δουλεύει // swaps print-noprint for specific day
+		function dayNotPrint(day) {
+			const table = document.getElementById('programTable')
+			
+			// Υπολογισμός: day είναι 1-based index (1 = πρώτη ημέρα)
+			const dayIndex = parseInt(day);
+			
+			// Βρες όλα τα κελιά της συγκεκριμένης ημέρας
+			// Για κάθε γραμμή στο tbody, τα κελιά της ημέρας είναι:
+			// από (dayIndex-1)*hoursLength + 1  έως  dayIndex*hoursLength
+			const startCol = (dayIndex - 1) * hoursLength + 1;  // +1 γιατί η πρώτη στήλη είναι το όνομα καθηγητή
+			const endCol = dayIndex * hoursLength;
+			
+			if (table.tHead.rows[0].cells[dayIndex].classList.contains('strike')) {
+				// Αν είναι ήδη struck, αφαίρεσε το strike και κάνε τα πάντα ορατά
+				
+				// Αφαίρεσε strike από header
+				table.tHead.rows[0].cells[dayIndex].classList.remove('strike');
+				table.tHead.rows[0].cells[dayIndex].classList.remove('no-print');
+				table.tHead.rows[0].cells[dayIndex].title = 'Do not print';
+				
+				// Κάνε όλες τις ώρες της ημέρας ορατές
+				for (let i = 0; i < hoursLength; i++) {
+					// Header ώρας
+					table.tHead.rows[1].cells[(dayIndex - 1) * hoursLength + i].classList.remove('no-print');
+					
+					// Κελιά σώματος
+					for (let j = 0; j < table.tBodies[0].rows.length; j++) {
+						table.tBodies[0].rows[j].cells[(dayIndex - 1) * hoursLength + i + 1].classList.remove('no-print');
+					}
+				}
+				
+			} else {
+				// Δεν είναι struck, οπότε πρόσθεσε strike και κάνε τα πάντα no-print
+				
+				// Πρόσθεσε strike στο header
+				table.tHead.rows[0].cells[dayIndex].classList.add('strike');
+				table.tHead.rows[0].cells[dayIndex].classList.add('no-print');
+				table.tHead.rows[0].cells[dayIndex].title = 'Do print';
+				
+				// Κάνε όλες τις ώρες της ημέρας no-print
+				for (let i = 0; i < hoursLength; i++) {
+					// Header ώρας
+					table.tHead.rows[1].cells[(dayIndex - 1) * hoursLength + i].classList.add('no-print');
+					
+					// Κελιά σώματος
+					for (let j = 0; j < table.tBodies[0].rows.length; j++) {
+						table.tBodies[0].rows[j].cells[(dayIndex - 1) * hoursLength + i + 1].classList.add('no-print');
+					}
+				}
+			}
+			
+			// Αν υπάρχουν οι πίνακες εκτύπωσης, ενημέρωσέ τους
+			updatePrintTablesVisibility();
+		}*/
+
+		// Συνάρτηση για απόκρυψη/εμφάνιση καθηγητή στην εκτύπωση
+		function teacherNotPrint(teacherCell) {
+			const row = teacherCell.parentElement
+			
+			if (teacherCell.classList.contains('strike')) {
+				// ΕΜΦΑΝΙΣΗ της γραμμής
+				row.classList.remove('no-print')
+				teacherCell.classList.remove('strike')
+				teacherCell.title = 'Κλικ για απόκρυψη από εκτύπωση'
+			} else {
+				// ΑΠΟΚΡΥΨΗ της γραμμής
+				row.classList.add('no-print')
+				teacherCell.classList.add('strike')
+				teacherCell.title = 'Κλικ για εμφάνιση στην εκτύπωση'
+			}
+		}
+
+		// Νέα συνάρτηση για ενημέρωση των print tables
+		function updatePrintTablesVisibility() {
+			const printTables = document.querySelectorAll('.print-table');
+			if (printTables.length === 0) return;
+			
+			const mainTable = document.getElementById('programTable');
+			const hiddenDays = [];
+			
+			// Βρες ποιες ημέρες είναι hidden (όχι no-print)
+			const dayCells = mainTable.tHead.rows[0].cells;
+			for (let i = 1; i < dayCells.length - 2; i++) {
+				if (dayCells[i].classList.contains('hidden-day')) {
+					hiddenDays.push(i);
+				}
+			}
+			
+			// Για κάθε print table
+			printTables.forEach(printTable => {
+				// Στον αντεστραμμένο πίνακα, οι ημέρες είναι στήλες στη thead
+				const headerRow = printTable.tHead.rows[0];
+				
+				// Αρχικά, εμφάνισε όλες τις στήλες
+				for (let i = 1; i < headerRow.cells.length; i++) {
+					headerRow.cells[i].classList.remove('hidden-day');
+					for (let row = 0; row < printTable.tBodies[0].rows.length; row++) {
+						const cell = printTable.tBodies[0].rows[row].cells[i];
+						if (cell) cell.classList.remove('hidden-day');
+					}
+				}
+				
+				// Μετά, κρύψε τις επιλεγμένες
+				hiddenDays.forEach(dayIndex => {
+					const headerCell = headerRow.cells[dayIndex];
+					if (headerCell) {
+						headerCell.classList.add('hidden-day');
+						
+						// Απόκρυψη όλων των κελιών σε αυτή τη στήλη
+						for (let row = 0; row < printTable.tBodies[0].rows.length; row++) {
+							const cell = printTable.tBodies[0].rows[row].cells[dayIndex];
+							if (cell) cell.classList.add('hidden-day');
+						}
+					}
+				});
+			});
+		}
+
+		// Συνάρτηση που καλεί την dayNotPrint και ενημερώνει το κουμπί
+		function callDayNotPrint(dayIndex) {
+			// Κάλεσε την υπάρχουσα dayNotPrint
+			dayNotPrint(dayIndex);
+			
+			// Ενημέρωσε την εμφάνιση του κουμπιού
+			updateDayButton(dayIndex);
+			
+			// Εφάρμοσε και στους πίνακες εκτύπωσης
+			updatePrintTablesVisibility();
+		}
+
+		// Συνάρτηση για ενημέρωση της εμφάνισης του κουμπιού
+		function updateDayButton(dayIndex) {
+			const dayButton = document.getElementById(`day${dayIndex}`);
+			const table = document.getElementById('programTable');
+			
+			// Έλεγξε αν η ημέρα είναι κρυμμένη (hidden-day)
+			if (table.tHead.rows[0].cells[dayIndex].classList.contains('hidden-day')) {
+				dayButton.classList.remove('active');
+				dayButton.classList.add('inactive');
+			} else {
+				dayButton.classList.remove('inactive');
+				dayButton.classList.add('active');
+			}
+		}
+
+		function initDayButtonsFromTable() {
+			const table = document.getElementById('programTable');
+			if (!table || !table.tHead) return;
+			
+			// Βρες πόσες μέρες υπάρχουν πραγματικά (μέχρι 5)
+			const maxDays = Math.min(5, table.tHead.rows[0].cells.length - 3);
+			
+			for (let i = 1; i <= maxDays; i++) {
+				if (table.tHead.rows[0].cells[i]) {
+					updateDayButton(i);
+				}
+			}
+		}
+
+		// sends card to warehouse
+        function handleDoubleClick(id) {
+            const table = document.getElementById("programTable");
+            const existingElements = Array.from(document.querySelectorAll(`span[id="${id}"]`))
+            existingElements.forEach(el => {
+                el.setAttribute('col', warehouseColumnIndex)
+                el.classList.remove('warn-span')
+                table.rows[el.getAttribute('row')].cells[warehouseColumnIndex].appendChild(el)
+            })
+            const existingElementsCells = Array.from(document.querySelectorAll(`td[id="${id}"]`))
+            existingElementsCells.forEach(el => {
+                el.removeAttribute('id')
+                el.removeAttribute('tmima')
+                el.removeAttribute('start')
+                el.removeAttribute('stop')
+                el.classList.add('spot-expelled');
+                setTimeout(() => el.classList.remove('spot-expelled'), spotExpellDuration);
+            })
+
+            findMissingTmimata()
+            saveTable(table)
+			if (showSameCards) removeHighlightSameGroup()			
+        }
+
+
+        // source: https://blog.stackademic.com/understanding-dom-serialization-and-parsing-in-javascript-28e8ec1acab3
+        const serializeDOM = (root) => {
+            if (!(root instanceof Element)) return null; // Ensure the element is a valid DOM element
+            const domList = {
+                childNodes: [],
+                type: "element",
+                tagName: root.tagName, // Get the tag name (e.g., div, p, h1)
+            };
+            // Loop through all the attributes of the element and add them to the serialized object
+            for (const attr of root.attributes) {
+                domList[attr.name] = `${attr.value}`;
+            }
+            // Recursively serialize child elements
+            root.childNodes.forEach((node) => {
+                if (node.nodeType === 1) {
+                    domList.childNodes.push(serializeDOM(node)); // Serialize child elements
+                } else if (node.nodeType === 3 && node.nodeValue.trim() !== "") {
+                    // Serialize text nodes, but ignore empty text nodes
+                    domList.childNodes.push({
+                        type: "text",
+                        content: node.nodeValue, // Store the content of the text node
+                    });
+                }
+            });
+            return domList; // Return the serialized DOM
+        };
+
+        // source: https://blog.stackademic.com/understanding-dom-serialization-and-parsing-in-javascript-28e8ec1acab3
+        const parseDOM = (element) => {
+            const { type } = element;
+            if (type === "text") {
+                // If it's a text node, create a text node
+                const rootEle = document.createTextNode(element.content);
+                return rootEle;
+            }
+            const { tagName, childNodes, ...props } = element;
+            const rootEle = document.createElement(tagName.toLowerCase()); // Create the element based on the tag name
+            // Set attributes of the element
+            for (let prop of Object.keys(props)) {
+                if (prop.startsWith("on")) {
+                    // Handle inline event listeners
+                    rootEle[prop] = new Function(props[prop]);
+                } else {
+                    rootEle.setAttribute(prop, props[prop]);
+                }
+            }
+            // Recursively append child nodes
+            childNodes.forEach((node) => {
+                rootEle.appendChild(parseDOM(node)); // Recursively parse child elements
+            });
+            return rootEle; // Return the recreated DOM element
+        };
+
+        function prev() {
+            let current = sessionStorage.getItem("current-table-index")
+            const first = sessionStorage.getItem("first-table-index")
+            if (current == first) { return }
+            current--
+            sessionStorage.setItem("current-table-index", current)
+            const tableJson = sessionStorage.getItem('table#' + current)
+            const newTable = parseDOM(JSON.parse(tableJson))
+            const oldTable = document.getElementById('programTable')
+            document.getElementById('tablediv').replaceChild(newTable, oldTable)
+
+            eventListeners()
+            showHidePrevNext()
+            doToggleFooter()
+        }
+
+        function next() {
+            let current = sessionStorage.getItem("current-table-index")
+            const last = sessionStorage.getItem("last-table-index")
+            if (current == last) { return }
+            current++
+            sessionStorage.setItem("current-table-index", current)
+            const tableJson = sessionStorage.getItem('table#' + current)
+            const newTable = parseDOM(JSON.parse(tableJson))
+            const oldTable = document.getElementById('programTable')
+            document.getElementById('tablediv').replaceChild(newTable, oldTable)
+
+            eventListeners()
+            showHidePrevNext()
+            doToggleFooter()
+        }
+
+		function showHidePrevNext() {
+			const first = sessionStorage.getItem("first-table-index")
+			const last = sessionStorage.getItem("last-table-index")
+			const current = sessionStorage.getItem("current-table-index")
+			if (current == last) {
+				document.getElementById('next').classList.add('display-none')
+			} else {
+				document.getElementById('next').classList.remove('display-none')
+			}
+			if (current == first) {
+				document.getElementById('prev').classList.add('display-none')
+			} else {
+				document.getElementById('prev').classList.remove('display-none')
+			}
+		}
+
+        // Get the modal
+        const aboutModal = document.getElementById("aboutModal");
+        // Get the button that opens the modal
+        const btn = document.getElementById("aboutBtn");
+        // Get the <span> element that closes the modal
+        const span = document.getElementsByClassName("close")[0];
+
+        // When the user clicks the button, open the modal 
+        btn.onclick = function () {
+            aboutModal.style.display = "block";
+        }
+
+        function closeAbout() {
+            aboutModal.style.display = 'none';
+            //window.location.reload()
+        }
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function () {
+            closeAbout()
+        }
+
+        // Get the error modal
+        const errorModal = document.getElementById('errorModal');
+
+        function showError(title, message) {
+            document.getElementById('errorTitle').textContent = title;
+            document.getElementById('errorMessage').textContent = message;
+            errorModal.style.display = 'block';
+        }
+
+        function closeError() {
+            //errorModal.style.display = 'none';
+            window.location.reload()
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            if (event.target === aboutModal) {
+                closeAbout();
+            }
+            if (event.target === errorModal) {
+                closeError();
+            }
+        }
+
+        // Close with ESC key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && aboutModal.style.display === 'block') {
+                closeAbout();
+            }
+            if (event.key === 'Escape' && errorModal.style.display === 'block') {
+                closeError();
+            }
+        });
+
+        function toggleFooterVisible() {
+            showFooter = !showFooter
+            doToggleFooter()
+        }
+
+        function doToggleFooter() {
+            const toggleFooter = document.getElementById('toggleFooter')
+            let allFootCells = Array.from(document.querySelectorAll(`.footer`))
+            allFootCells.forEach(c => {
+                if (showFooter) {
+                    c.classList.remove('display-none')
+                    toggleFooter.title = "Toggle footer invisible"
+                    toggleFooter.innerHTML = "&otimes;"
+                } else {
+                    c.classList.add('display-none')
+                    toggleFooter.title = "Toggle footer visible"
+                    toggleFooter.innerHTML = "&oplus;"
+                }
+            })
+            findMissingTmimata()
+        }
+
+        function setTitle() {
+            let title = prompt('Input title to be printed', document.getElementById('title').textContent)
+            if (title == null) return
+            if (!title.trim()) return
+            document.getElementById('title').textContent = title.trim();
+        }
+
+        function markBorder() {
+            const markBorder = Array.from(document.querySelectorAll(`.mark-border`))
+            markBorder.forEach(el => {
+                //if (document.documentElement.hasAttribute('dir')) {
+                if (document.getElementById('tablecontainer').hasAttribute('dir')) {
+                    el.style.borderLeftWidth = 'medium';
+                    el.style.borderRightWidth = 'thin';
+                } else {
+                    el.style.borderRightWidth = 'medium';
+                    el.style.borderLeftWidth = 'thin';
+                }
+            })
+        }
+
+        function changeDirection() {
+            const direction = localStorage.getItem("direction")
+            if (!direction) {
+                localStorage.setItem("direction", 'rtl')
+                document.getElementById('tablecontainer').setAttribute('dir', 'rtl')
+            } else {
+                // document.documentElement.removeAttribute('dir')
+                document.getElementById('tablecontainer').removeAttribute('dir')
+                localStorage.removeItem("direction")
+                document.getElementById('prev').innerHTML = '&larr;'
+                document.getElementById('next').innerHTML = '&rarr;'
+            }
+            markBorder()
+        }
+
+        // show/hide top-span with subject
+        function showSubject() {
+            // get all top-spans of cards that show subject
+            const topSpans = Array.from(document.querySelectorAll(`.top-span`))
+            topSpans.forEach(el => {
+                if (el.classList.contains('display-none')) {
+                    // make them visible and vertcal align bottom
+                    el.classList.remove('display-none')
+                    el.classList.add('display-block')
+                    //el.parentElement.parentElement.style.verticalAlign = 'bottom'
+                } else {
+                    // make them invisible and vertcal align middle
+                    el.classList.remove('display-block')
+                    el.classList.add('display-none')
+                    //el.parentElement.parentElement.style.verticalAlign = 'middle'
+                }
+            })
+
+        }
+
+        // add click eventListener to button [...]
+
+        // check if clicked left - center - right
+        // if center show/hide top-span with subject
+        // if left reduce subject font-size
+        // if right enlarge subject font-size
+        const showSubjectDiv = document.getElementById('showSubject');
+        showSubjectDiv.addEventListener('click', (event) => {
+            // Get the bounding rectangle of the div
+            const rect = showSubjectDiv.getBoundingClientRect();
+            // Calculate the center X-coordinate of the div
+            const leftX = rect.left + rect.width / 4;
+            const rightX = rect.right - rect.width / 4;
+            // Get the X-coordinate of the click
+            const clickX = event.clientX;
+
+            const topSpans = Array.from(document.querySelectorAll(`.top-span`))
+            // Determine if the click was on the left or right side
+            if (clickX < leftX) {
+                topSpans.forEach(el => {
+                    el.style.fontSize = (parseFloat(el.style.fontSize) - 0.1) + 'rem'
+                    if (el.classList.contains('display-none')) { showSubject() }
+                })
+            } else if (clickX > rightX) {
+                topSpans.forEach(el => {
+                    el.style.fontSize = (parseFloat(el.style.fontSize) + 0.1) + 'rem'
+                    if (el.classList.contains('display-none')) { showSubject() }
+                })
+            } else {
+                showSubject()
+            }
+        });
+
+
+
+
+        window.onload = () => {
+			const savedTileWidth = localStorage.getItem('tileWidth');
+			if (savedTileWidth) {
+				originalTileWidth = parseInt(savedTileWidth)
+				document.documentElement.style.setProperty('--tile-width', originalTileWidth + 'px');
+			}
+            if (localStorage.getItem("direction")) {
+                document.getElementById('tablecontainer').setAttribute('dir', 'rtl')
+            }
+			showSameCards = localStorage.getItem('showSameCards') === 'true';
+			if (showSameCards) {
+				document.getElementById('sameCards').innerHTML = '&starf;';
+				document.getElementById('sameCards').title = 'Disable highlight same group cards';
+			}			
+			document.getElementById('csv').addEventListener('click', exportTableToCSV, false);
+			document.getElementById('setTileWidth').addEventListener('click', setTileWidth, false);			
+			document.getElementById('sameCards').addEventListener('click', toggleShowSameCards, false);		
+		}
+
+        // clear session 
+        window.onbeforeunload = () => sessionStorage.clear()
+
+		function createSampleTable(includeHourTotals = false) {
+			// create new sampleTable structure
+			const sampleTable = document.createElement("table");
+			// add class to easy access later
+			sampleTable.classList.add('print-table')
+
+			const header = document.getElementById("programTable").tHead.cloneNode(true)
+			const days = Array.from(header.firstChild.children).slice(1, header.firstChild.children.length)
+			
+			// Αν δεν θέλουμε τις στήλες Σύνολο Ωρών και Σύμβαση Ωρών, 
+			// αφαιρούμε τις δύο τελευταίες στήλες
+			if (!includeHourTotals) {
+				days.splice(-2, 2);
+			}
+			
+			const hours = Array.from(header.lastChild.children).slice(0, hoursLength)
+			// create thead and add row and cells with hour names
+			const head = sampleTable.appendChild(document.createElement('thead'))
+			const row = head.insertRow()
+			hours.forEach(h => {
+				const cell = row.appendChild(h.cloneNode(true))
+				cell.removeAttribute('style')
+				cell.innerText = cell.title
+			})
+			// create tbody add rows and first cell with day names
+			sampleTable.appendChild(document.createElement('tbody'))
+			days.forEach(d => {
+				const row = sampleTable.tBodies[0].insertRow()
+				const cell = row.appendChild(d.cloneNode(true))
+				cell.removeAttribute('style')
+				cell.removeAttribute('colSpan')
+			})
+			return sampleTable
+		}
+
+		// show and print schedule per teacher
+		function createTransposedTable(includeHourTotals = false) {
+			// Δημιουργεί πίνακα με αντεστραμμένο προσανατολισμό
+			const sampleTable = document.createElement("table");
+			sampleTable.classList.add('print-table')
+			
+			const header = document.getElementById("programTable").tHead.cloneNode(true)
+			const daysRow = header.firstChild;
+			const hoursRow = header.lastChild;
+			
+			// Βρίσκουμε τα days (με το όνομα του καθηγητή/τμήματος θα προστεθεί αργότερα)
+			const days = Array.from(daysRow.children).slice(1, daysRow.children.length)
+			
+			// Αν δεν θέλουμε τις στήλες ωρών, αφαιρούμε τις 2 τελευταίες
+			if (!includeHourTotals) {
+				days.splice(-2, 2);
+			}
+			
+			// Βρίσκουμε τα hours
+			const hours = Array.from(hoursRow.children).slice(0, hoursLength)
+			
+			// Δημιουργούμε thead με μέρες ως πρώτη γραμμή
+			const head = sampleTable.appendChild(document.createElement('thead'))
+			const titleRow = head.insertRow()
+			
+			// Πρώτο κελί κενό (για τις ώρες)
+			const emptyCell = titleRow.insertCell()
+			emptyCell.style.minWidth = '100px'
+			
+			// Προσθέτουμε τις μέρες ως στήλες
+			days.forEach(day => {
+				const cell = titleRow.appendChild(day.cloneNode(true))
+				cell.removeAttribute('style')
+				cell.removeAttribute('colSpan')
+				cell.innerText = day.textContent
+				cell.classList.add('text-center')
+			})
+			
+			// Δημιουργούμε tbody με ώρες ως γραμμές
+			const tbody = sampleTable.appendChild(document.createElement('tbody'))
+			hours.forEach(hour => {
+				const row = tbody.insertRow()
+				
+				// Πρώτο κελί με την ώρα
+				const hourCell = row.insertCell()
+				hourCell.textContent = hour.title || hour.textContent
+				hourCell.classList.add('text-center')
+				hourCell.style.fontWeight = 'bold'
+				hourCell.style.minWidth = '100px'
+				
+				// Δημιουργούμε κενά κελιά για κάθε μέρα
+				for (let i = 0; i < days.length; i++) {
+					const cell = row.insertCell()
+					cell.classList.add('program')
+				}
+			})
+			
+			return sampleTable
+		}
+
+
+		function printTeachersSchedule() {
+			currentView = 'teachers'
+			// get access to programTable
+			const table = document.getElementById("programTable");
+			// if table is not visible we make it visible
+			if (table.classList.contains('display-none')) {
+				table.classList.remove('display-none')
+				// set buttons visible
+				document.getElementById('printTeachers').title = 'Print Teachers Schedule'
+				document.getElementById('printGroups').classList.remove('display-none')
+				document.getElementById('printGroups').classList.add('display-inline-block')
+				document.getElementById('toggleFooter').classList.remove('display-none')
+				document.getElementById('toggleFooter').classList.add('display-inline-block')
+				document.getElementById('prev').classList.remove('display-none')
+				document.getElementById('next').classList.remove('display-none')
+				showHidePrevNext()   // ← Αποφασίζει με βάση το ιστορικό
+				
+				// remove all printTeacher tables
+				const printTeacherTables = Array.from(document.querySelectorAll(`.print-table`))
+				printTeacherTables.forEach(t => {
+					if (t && t.parentNode && table.parentElement) {
+						table.parentElement.removeChild(t)
+					}
+				})
+				
+				// set css var --tile-width to default value
+				currentView = 'normal';
+				document.documentElement.style.setProperty('--tile-width', originalTileWidth + 'px');
+				// exit
+				return
+			}
+			
+			// table is visible. We make it invisible
+			table.classList.add('display-none')
+			// set buttons invisible
+			document.getElementById('printTeachers').title = 'Back'
+			document.getElementById('printGroups').classList.remove('display-inline-block')
+			document.getElementById('printGroups').classList.add('display-none')
+			document.getElementById('toggleFooter').classList.remove('display-inline-block')
+			document.getElementById('toggleFooter').classList.add('display-none')
+			document.getElementById('prev').classList.remove('display-inline-block')
+			document.getElementById('prev').classList.add('display-none')
+			document.getElementById('next').classList.remove('display-inline-block')
+			document.getElementById('next').classList.add('display-none')
+
+			// save original value of css var --tile-width to variable
+			tileWidth = window.getComputedStyle(document.body).getPropertyValue('--tile-width')
+			
+			// get transposed table WITHOUT hour totals columns
+			const baseTable = createTransposedTable(false)
+
+			// get all rows of programTable
+			const tableRows = Array.from(table.tBodies[0].rows)
+			
+			// Βρες ποιοι καθηγητές είναι κρυμμένοι
+			const hiddenTeachers = []
+			tableRows.forEach((row, index) => {
+				const teacherCell = row.cells[0]
+				if (teacherCell.classList.contains('strike')) {
+					hiddenTeachers.push(index)
+				}
+			})
+    		
+			// loop to create table for each teacher row
+			tableRows.forEach((tr, rowIndex) => {
+				// Παράλειψε κρυμμένους καθηγητές
+				if (hiddenTeachers.includes(rowIndex)) return
+        
+				// get teacher name from first cell
+				const teacherName = tr.cells[0].textContent
+				
+				// clone baseTable
+				const newTable = baseTable.cloneNode(true)
+				
+				// set teacher name as table title
+				const teacherTitleCell = newTable.tHead.rows[0].cells[0]
+				teacherTitleCell.textContent = teacherName
+				teacherTitleCell.rowSpan = 2
+				teacherTitleCell.style.fontWeight = 'bold'
+				teacherTitleCell.style.background = '#f5fbff'
+				teacherTitleCell.style.color = '#11496e'
+				teacherTitleCell.style.textAlign = 'center'
+				teacherTitleCell.style.verticalAlign = 'middle'
+				teacherTitleCell.title = "Do not print"
+				teacherTitleCell.style.cursor = 'pointer'
+				teacherTitleCell.addEventListener('click', () => tableNotPrint(newTable))
+
+				// get all cells of current row (except first and last)
+				const programCells = Array.from(tr.cells).slice(1, -1)
+				
+				// Αφαιρούμε τις δύο τελευταίες στήλες (Σύνολο Ωρών, Σύμβαση Ωρών)
+				programCells.splice(-2, 2);
+				
+				// Βάζουμε τα μαθήματα στον αντεστραμμένο πίνακα
+				programCells.forEach((cell, cellIndex) => {
+					if (!cell.children.length) return; // Αν δεν έχει μαθήματα, συνέχισε
+					
+					// Υπολογίζουμε ημέρα και ώρα από το cellIndex
+					const dayIndex = Math.floor(cellIndex / hoursLength)
+					const hourIndex = cellIndex % hoursLength
+					
+					// Βρίσκουμε το κελί στον αντεστραμμένο πίνακα
+					const targetRow = newTable.tBodies[0].rows[hourIndex]
+					if (!targetRow) return;
+					
+					// +1 γιατί το πρώτο κελί είναι η ώρα
+					const targetCell = targetRow.cells[dayIndex + 1]
+					if (!targetCell) return;
+					
+					// Αντιγράφουμε όλα τα μαθήματα από το κελί
+					Array.from(cell.children).forEach(child => {
+						if (child.classList.contains('drag-span')) {
+							const clonedChild = child.cloneNode(true)
+							
+							// ΑΦΑΙΡΕΣΗ: Αφαιρούμε τις κλάσεις πλάτους (w-2, w-3, κλπ)
+							clonedChild.classList.remove('w-2', 'w-3', 'w-4', 'w-5')
+							
+							// Προσαρμόζουμε το στυλ για τον αντεστραμμένο πίνακα
+							clonedChild.style.margin = '2px'
+							clonedChild.style.padding = '2px'
+							clonedChild.style.width = `calc(${tileWidth} * 2.9)`
+							clonedChild.style.minWidth = `calc(${tileWidth} * 2.5)`
+							clonedChild.style.maxWidth = `calc(${tileWidth} * 3.3)`
+							
+							// Ελέγχουμε διάρκεια
+							const duration = parseInt(clonedChild.getAttribute('w')) || 1
+							
+							// Αν είναι δίωρο (ή περισσότερο), χρειαζόμαστε rowspan
+							if (duration > 1) {
+								// Υπολογίζουμε πόσες γραμμές χρειαζόμαστε
+								const rowspan = duration
+								
+								// Συγχώνευση των κελιών
+								for (let i = 0; i < rowspan; i++) {
+									const rowToMerge = newTable.tBodies[0].rows[hourIndex + i]
+									if (rowToMerge) {
+										// Κρύβουμε τα επιπλέον κελιά
+										const cellToHide = rowToMerge.cells[dayIndex + 1]
+										if (cellToHide && i > 0) {
+											cellToHide.style.display = 'none'
+										}
+									}
+								}
+								
+								// Ορίζουμε rowspan στο πρώτο κελί
+								targetCell.rowSpan = rowspan
+								targetCell.style.verticalAlign = 'middle'
+								
+								// ΔΙΠΛΑΣΙΟ ΥΨΟΣ: Προσαρμόζουμε το ύψος της κάρτας
+								clonedChild.style.height = `calc(${rowspan} * ${tileWidth})`
+								clonedChild.style.minHeight = `calc(${rowspan} * ${tileWidth})`
+								clonedChild.style.display = 'flex'
+								clonedChild.style.flexDirection = 'column'
+								clonedChild.style.justifyContent = 'center'
+								clonedChild.style.alignItems = 'center'
+							} else {
+								// Για μονοώρα μαθήματα
+								clonedChild.style.height = tileWidth
+								clonedChild.style.minHeight = tileWidth
+								clonedChild.style.display = 'flex'
+								clonedChild.style.flexDirection = 'column'
+								clonedChild.style.justifyContent = 'center'
+								clonedChild.style.alignItems = 'center'
+							}
+							
+							// Μπορούμε να προσαρμόσουμε το κείμενο για καλύτερη εμφάνιση
+							const info = clonedChild.getAttribute('info')
+							if (info) {
+								const infoParts = info.split('\n')
+								if (infoParts.length >= 2) {
+									// Πρώτη γραμμή: μάθημα, δεύτερη: τμήμα
+									const tmimaOnly = infoParts[0].split(' - ')[0];
+									clonedChild.innerHTML = `
+										<span class="top-span" style="font-size:0.9rem !important;">${infoParts[1]}</span>
+										<span class="bottom-span" style="font-size:1.2rem !important; font-weight:bold;">${tmimaOnly}</span>
+									`
+								}
+							}
+							
+							targetCell.appendChild(clonedChild)
+						}
+					})
+				})
+				
+				// Προσθέτουμε το πίνακα στο DOM
+				table.parentElement.appendChild(newTable)
+			})
+			 
+			markBorder()
+			
+			const teacherTables = document.querySelectorAll('.print-table:not([id^="tbl@"])')
+			teacherTables.forEach(table => {
+				const cells = table.querySelectorAll('td.program:not([rowspan])')
+				cells.forEach(cell => {
+					cell.style.height = `calc(${tileWidth} * 1.1)`
+					cell.style.minHeight = `calc(${tileWidth} * 1.1)`
+					cell.style.verticalAlign = 'middle'
+				})
+			})			
+			
+			// set --tile-width για τους νέους πίνακες
+			const newTileWidth = originalTileWidth * 3;
+			document.documentElement.style.setProperty('--tile-width', newTileWidth + 'px');
+			updatePrintTablesVisibility();
+		}
+
+
+        function daysPrintNoprint(index) {
+            // get all days of printTeacherTables
+            const days = Array.from(document.querySelectorAll(`.day-print-noprint`))
+            days.forEach(d => {
+                // if index is different continue to next
+                if (d.getAttribute('index') !== index) return
+                // toggle print - no-print
+                if (d.classList.contains('strike')) {
+                    d.classList.remove('strike')
+                    d.title = 'Do not print'
+                    d.parentElement.classList.remove('no-print')
+                } else {
+                    d.classList.add('strike')
+                    d.title = 'Do print'
+                    d.parentElement.classList.add('no-print')
+                }
+            })
+
+        }
+
+		function printGroupsSchedule() {
+			currentView = 'groups';
+			// get access to programTable
+			const table = document.getElementById("programTable");
+			// if table is not visible we make it visible
+			if (table.classList.contains('display-none')) {
+				table.classList.remove('display-none')
+				// set buttons visible
+				document.getElementById('printGroups').title = "Print Groups Schedule"
+				document.getElementById('printTeachers').classList.remove('display-none')
+				document.getElementById('printTeachers').classList.add('display-inline-block')
+				document.getElementById('toggleFooter').classList.remove('display-none')
+				document.getElementById('toggleFooter').classList.add('display-inline-block')
+				document.getElementById('prev').classList.remove('display-none')
+				document.getElementById('next').classList.remove('display-none')
+				showHidePrevNext()
+				
+				// remove all printTeacher tables
+				const printTeacherTables = Array.from(document.querySelectorAll(`.print-table`))
+				printTeacherTables.forEach(t => {
+					if (t && t.parentNode && table.parentElement) {
+						table.parentElement.removeChild(t)
+					}
+				})
+				
+				// set css var --tile-width to default value
+				currentView = 'normal';
+				document.documentElement.style.setProperty('--tile-width', originalTileWidth + 'px');
+				// exit
+				return
+			}
+			
+			// table is visible. We make it invisible
+			table.classList.add('display-none')
+			// set buttons invisible
+			document.getElementById('printGroups').title = 'Back'
+			document.getElementById('printTeachers').classList.remove('display-inline-block')
+			document.getElementById('printTeachers').classList.add('display-none')
+			document.getElementById('toggleFooter').classList.remove('display-inline-block')
+			document.getElementById('toggleFooter').classList.add('display-none')
+			document.getElementById('prev').classList.remove('display-inline-block')
+			document.getElementById('prev').classList.add('display-none')
+			document.getElementById('next').classList.remove('display-inline-block')
+			document.getElementById('next').classList.add('display-none')
+
+			// save original value of css var --tile-width to variable
+			tileWidth = window.getComputedStyle(document.body).getPropertyValue('--tile-width')
+			
+			// get transposed table WITHOUT hour totals columns
+			const baseTable = createTransposedTable(false)
+
+			// loop to create table for each group
+			groupsArray.forEach(tm => {
+				const cleanTm = tm.trim();
+				if (!cleanTm) return;
+				
+				// clone baseTable
+				const newTable = baseTable.cloneNode(true)
+				newTable.id = 'tbl@' + cleanTm
+
+				// set group name as table title
+				const groupTitleCell = newTable.tHead.rows[0].cells[0]
+				groupTitleCell.textContent = cleanTm
+				groupTitleCell.rowSpan = 2
+				groupTitleCell.style.fontWeight = 'bold'
+				groupTitleCell.style.background = '#f5fbff'
+				groupTitleCell.style.color = '#11496e'
+				groupTitleCell.style.textAlign = 'center'
+				groupTitleCell.style.verticalAlign = 'middle'
+				groupTitleCell.title = "Do not print"
+				groupTitleCell.style.cursor = 'pointer'
+				groupTitleCell.addEventListener('click', () => tableNotPrint(newTable))
+
+				// add table to DOM
+				table.parentElement.appendChild(newTable)
+			})
+
+			const groupTables = document.querySelectorAll('.print-table')
+			groupTables.forEach(table => {
+				// Βρες όλα τα κελιά προγράμματος
+				const cells = table.querySelectorAll('td.program')
+				cells.forEach(cell => {
+					// Αν το κελί ΔΕΝ έχει rowspan (δεν είναι πολύωρο)
+					if (!cell.hasAttribute('rowspan')) {
+						cell.style.height = `calc(${tileWidth} * 1.3)`
+						cell.style.minHeight = `calc(${tileWidth} * 1.3)`
+						cell.style.verticalAlign = 'middle'
+					}
+				})
+			})
+
+			// get all cards and place them in the transposed tables
+			const allSpans = Array.from(document.querySelectorAll(`.drag-span`))
+			allSpans.forEach(sp => {
+				const col = parseInt(sp.getAttribute('col'))
+				const row = parseInt(sp.getAttribute('row'))
+
+				// if card is in warehouse or in hour totals columns, skip it
+				if (col == warehouseColumnIndex || col === warehouseColumnIndex - 2 || col === warehouseColumnIndex - 1) {
+					return
+				}
+
+				// adjustedCol = col - 1 (για να ξεκινήσουμε από 0)
+				const adjustedCol = col - 1;
+				
+				// Υπολογίζουμε ημέρα και ώρα
+				const dayIndex = Math.floor(adjustedCol / hoursLength)
+				const hourIndex = adjustedCol % hoursLength
+				
+				// Ελέγχουμε διάρκεια
+				const duration = parseInt(sp.getAttribute('w')) || 1
+				
+				console.log(`Card at col ${col} (adj ${adjustedCol}) -> Day ${dayIndex}, Hour ${hourIndex}, Duration: ${duration}`);
+				
+				// Get the tmima values
+				const arrTableId = sp.getAttribute('tmima').split(',')
+				
+				arrTableId.forEach(tm => {
+					const cleanTm = tm.trim();
+					if (!cleanTm) return;
+					
+					const tableId = 'tbl@' + cleanTm;
+					const targetTable = document.getElementById(tableId);
+					
+					if (!targetTable) {
+						console.debug('Group not found in table:', cleanTm);
+						return;
+					}
+					
+					// Βρίσκουμε τη σωστή γραμμή (ώρα) στον αντεστραμμένο πίνακα
+					const targetRow = targetTable.tBodies[0].rows[hourIndex]
+					if (!targetRow) {
+						console.log(`No row for hour ${hourIndex} in table ${cleanTm}`);
+						return;
+					}
+					
+					// +1 γιατί το πρώτο κελί είναι η ώρα
+					const targetCell = targetRow.cells[dayIndex + 1]
+					if (!targetCell) {
+						console.log(`No cell for day ${dayIndex} in row ${hourIndex} in table ${cleanTm}`);
+						return;
+					}
+					
+					// Αν είναι δίωρο ή τρίωρο, ελέγχουμε αν υπάρχει χώρος
+					if (duration > 1) {
+						// Ελέγχουμε αν υπάρχουν αρκετές γραμμές
+						if (hourIndex + duration > targetTable.tBodies[0].rows.length) {
+							console.log(`Not enough rows for ${duration}-hour card`);
+							return;
+						}
+						
+						// Ελέγχουμε αν τα κελιά είναι διαθέσιμα
+						let cellsAvailable = true
+						for (let i = 0; i < duration; i++) {
+							const checkRow = targetTable.tBodies[0].rows[hourIndex + i]
+							if (!checkRow) {
+								cellsAvailable = false
+								break
+							}
+							const checkCell = checkRow.cells[dayIndex + 1]
+							if (!checkCell || checkCell.children.length > 0) {
+								cellsAvailable = false
+								break
+							}
+						}
+						
+						if (!cellsAvailable) {
+							console.log(`Cells not available for ${duration}-hour card`);
+							return
+						}
+					}
+					
+					// Clone and add the card
+					const clonedCard = sp.cloneNode(true)
+					// ΑΦΑΙΡΕΣΗ: Αφαιρούμε τις κλάσεις πλάτους
+					clonedCard.classList.remove('w-2', 'w-3', 'w-4', 'w-5')
+					
+					// Ορισμός πλάτους και ύψους
+					clonedCard.style.width = `calc(${tileWidth} * 2.9)`
+					clonedCard.style.minWidth = `calc(${tileWidth} * 2.5)`
+					clonedCard.style.maxWidth = `calc(${tileWidth} * 3.3)`
+					clonedCard.style.margin = '2px'
+					clonedCard.style.padding = '2px'
+					clonedCard.style.textAlign = 'center'
+					clonedCard.style.wordBreak = 'break-word'
+
+					clonedCard.classList.add('multi-hour-card')
+					
+					// Αν είναι δίωρο, κάνουμε rowspan
+					if (duration > 1) {
+						// Συγχώνευση κελιών
+						for (let i = 1; i < duration; i++) {
+							const rowToHide = targetTable.tBodies[0].rows[hourIndex + i]
+							if (rowToHide) {
+								const cellToHide = rowToHide.cells[dayIndex + 1]
+								if (cellToHide) {
+									cellToHide.style.display = 'none'
+								}
+							}
+						}
+						
+						// Ορίζουμε rowspan στο πρώτο κελί
+						targetCell.rowSpan = duration
+						targetCell.style.verticalAlign = 'middle'
+						
+						// Προσαρμόζουμε το ύψος της κάρτας
+						// ΔΙΠΛΑΣΙΟ ΥΨΟΣ
+						clonedCard.style.height = `calc(${duration} * ${tileWidth} * 1.4)`
+						clonedCard.style.minHeight = `calc(${duration} * ${tileWidth} * 1.4)`
+						clonedCard.classList.add('multi-hour-card')
+						clonedCard.style.display = 'flex'
+						clonedCard.style.flexDirection = 'column'
+						clonedCard.style.justifyContent = 'center'
+						clonedCard.style.alignItems = 'center'
+					} else {
+						// Μονοώρα
+						clonedCard.style.height = `calc(${tileWidth} * 1.2)`
+						clonedCard.style.minHeight =  `calc(${tileWidth} * 1.2)`
+						clonedCard.classList.add('single-hour-card')
+						clonedCard.style.display = 'flex'
+						clonedCard.style.flexDirection = 'column'
+						clonedCard.style.justifyContent = 'center'
+						clonedCard.style.alignItems = 'center'
+					}
+					
+					// Update the text for better display in transposed view
+					const info = clonedCard.getAttribute('info')
+					if (info) {
+						const infoParts = info.split('\n')
+						if (infoParts.length >= 3) {
+							clonedCard.innerHTML = `
+								<span class="top-span" style="font-size:1.1rem !important; font-weight:bold;">${infoParts[1]}</span>
+								<span class="bottom-span" style="font-size:0.8rem !important;">${infoParts[2]}</span>
+							`
+						}
+					}
+					
+					// Add only if cell is empty (για να αποφύγουμε διπλότυπα)
+					if (!targetCell.children.length) {
+						targetCell.appendChild(clonedCard)
+					}
+				})
+			})
+			
+			markBorder()
+			// set --tile-width for new tables
+			const newTileWidth = originalTileWidth * 3
+			document.documentElement.style.setProperty('--tile-width', newTileWidth + 'px');
+			updatePrintTablesVisibility();
+		}
+
+		function exportTableToCSV() {
+			const filename = document.getElementById('title').textContent + ".csv"
+			const table = document.getElementById("programTable");
+			const headrow = table.tHead.rows[1];
+
+			let csv = []
+
+			// Δημιουργία επικεφαλίδας
+			let headerRow = ['"Καθηγητής"']
+			
+			// Πάρε όλες τις ώρες (κελιά της δεύτερης γραμμής)
+			const hourCells = Array.from(headrow.cells)
+			
+			hourCells.forEach((cell, index) => {
+				// Υπολόγισε σε ποια μέρα ανήκει αυτή η ώρα
+				const dayIndex = Math.floor(index / hoursLength)
+				const dayCell = table.tHead.rows[0].cells[dayIndex + 1] // +1 γιατί πρώτο κελί είναι ο τίτλος
+				
+				if (dayCell && !dayCell.classList.contains('hidden-day') && !cell.classList.contains('no-print')) {
+					const dayName = dayCell.textContent.trim()
+					const hourName = cell.textContent.trim()
+					headerRow.push('"' + dayName + ' ' + hourName + '"')
+				}
+			})
+			csv.push(headerRow.join(","))
+
+			// Δεδομένα γραμμών
+			const rows = Array.from(table.tBodies[0].rows);
+			rows.forEach(row => {
+				let rowData = []
+				
+				// Όνομα καθηγητή (πρώτη στήλη)
+				const teacherCell = row.cells[0]
+				rowData.push('"' + (teacherCell?.textContent || '') + '"')
+				
+				// Πάρε όλα τα κελιά προγράμματος (εκτός από warehouse και στήλες συνόλων)
+				const cells = Array.from(row.cells).slice(1, -3) // -3 γιατί έχουμε warehouse + 2 στήλες συνόλων
+				
+				cells.forEach((cell, index) => {
+					// Υπολόγισε σε ποια μέρα ανήκει
+					const dayIndex = Math.floor(index / hoursLength)
+					const dayCell = table.tHead.rows[0].cells[dayIndex + 1]
+					
+					// Αν η μέρα είναι ορατή, πρόσθεσε το κελί
+					if (dayCell && !dayCell.classList.contains('hidden-day') && !cell.classList.contains('no-print')) {
+						let cellText = ''
+						if (cell.children.length > 0) {
+							// Πάρε το κείμενο από τα spans (το κάτω μέρος που έχει το τμήμα)
+							const spans = Array.from(cell.querySelectorAll('span.drag-span .bottom-span'))
+							cellText = spans.map(s => s.textContent).join(' ')
+						}
+						rowData.push('"' + cellText.replace(/"/g, '""') + '"')
+					}
+				})
+				
+				csv.push(rowData.join(","))
+			})
+
+			const data = csv.join("\n")
+			const blob = new Blob(["\uFEFF" + data], { type: "text/csv;charset=utf-8;" });
+			const link = document.createElement("a");
+
+			link.href = URL.createObjectURL(blob);
+			link.download = filename;
+			link.click();
+			URL.revokeObjectURL(link.href);
+		}
+
+		function setTileWidth(event) {
+			// Διάβασε την τρέχουσα τιμή από το CSS
+			const currentTileWidth = parseInt(window.getComputedStyle(document.body).getPropertyValue('--tile-width'));
+			
+			// Υπολόγισε το original με βάση την προβολή
+			let currentOriginal = currentTileWidth;
+			if (currentView === 'teachers' || currentView === 'groups') {
+				currentOriginal = Math.round(currentTileWidth / 3);
+			}
+			
+			let newOriginal = currentOriginal;
+			
+			const rect = event.target.getBoundingClientRect();
+			const leftX = rect.left + rect.width / 4;
+			const rightX = rect.right - rect.width / 4;
+			const clickX = event.clientX;
+			
+			if (clickX < leftX) {
+				newOriginal = currentOriginal - 2;
+			} else if (clickX > rightX) {
+				newOriginal = currentOriginal + 2;
+			} else {
+				const input = prompt("Εισάγετε νέο πλάτος κελιού (σε px):", currentOriginal);
+				if (input === null) return;
+				newOriginal = parseInt(input);
+			}
+			
+			if (isNaN(newOriginal)) return;
+			if (newOriginal < 20) newOriginal = 20;
+			if (newOriginal > 80) newOriginal = 80;
+			
+			// Αποθήκευσε το original
+			originalTileWidth = newOriginal;
+			
+			// Εφάρμοσε ανάλογα με την προβολή
+			if (currentView === 'normal') {
+				document.documentElement.style.setProperty('--tile-width', originalTileWidth + 'px');
+			} else {
+				document.documentElement.style.setProperty('--tile-width', (originalTileWidth * 3) + 'px');
+			}
+			
+			localStorage.setItem('tileWidth', originalTileWidth);
+		}
+
+		// Μεταβλητή για την κατάσταση
+		let showSameCards = false;
+
+		// Προσθήκη highlight σε κάρτες με ίδιο τμήμα
+		function addHighlightSameGroup(el) {
+			if (!el || !el.classList.contains('drag-span')) return;
+
+			const tmimaAttr = el.getAttribute('tmima');
+			if (!tmimaAttr) return;
+
+			const tmimata = tmimaAttr.split(',').map(s => s.trim()).filter(Boolean);
+			if (tmimata.length === 0) return;
+
+			const topSpan = el.querySelector('.top-span');
+			const mathima = topSpan ? topSpan.innerText.trim() : '';
+
+			let spans = [];
+			tmimata.forEach(tm => {
+				// escape για ασφάλεια σε περίεργα ονόματα
+				const safeTm = (window.CSS && CSS.escape) ? CSS.escape(tm) : tm;
+				spans = [...spans, ...document.querySelectorAll(`span.drag-span[tmima*="${safeTm}"]`)];
+			});
+
+			spans = Array.from(new Set(spans));
+
+			spans.forEach(sp => {
+				sp.classList.add('same-tmima');
+				const spTop = sp.querySelector('.top-span');
+				if (spTop && mathima && spTop.innerText.trim() === mathima) {
+					sp.classList.add('same-mathima');
+				}
+			});
+		}
+
+		// Αφαίρεση highlight
+		function removeHighlightSameGroup() {
+			document.querySelectorAll(`span.drag-span`)
+				.forEach(sp => sp.classList.remove('same-tmima', 'same-mathima'))
+		}
+
+		// Toggle λειτουργίας
+		function toggleShowSameCards() {
+			showSameCards = !showSameCards
+			doToggleShowSameCards()
+		}
+
+		// Εφαρμογή αλλαγής κατάστασης
+		function doToggleShowSameCards() {
+			// Αποθήκευση στο localStorage
+			if (showSameCards) {
+				localStorage.setItem('showSameCards', 'true')
+			} else {
+				localStorage.removeItem('showSameCards')
+				removeHighlightSameGroup() // Καθάρισε τυχόν highlights
+			}
+			
+			// Ενημέρωση κουμπιού
+			const sameCards = document.getElementById('sameCards')
+			sameCards.innerHTML = showSameCards ? '&starf;' : '&star;';
+			sameCards.title = showSameCards ? 'Disable highlight same group cards' : 'Enable highlight same group cards';
+		}
+
+		// Συνάρτηση για έλεγχο αν επιτρέπεται το drop
+		function allowDrop(cell) {
+			const dragElId = draggedElement.id
+			const dragElSize = draggedElement.getAttribute('w')
+			const cellId = +cell.id + +cell.getAttribute('start')
+			const columnIndex = cell.cellIndex
+
+			// Αν είναι στην ίδια θέση, απαγόρευσε
+			if (dragElId == cellId) {
+				return false
+			}
+
+			// Έλεγχος για τελευταίες ώρες (πολύωρα μαθήματα)
+			let lastHoursAllowance = columnIndex % hoursLength
+			if (lastHoursAllowance == 0) {
+				lastHoursAllowance = 1
+			} else {
+				lastHoursAllowance = hoursLength - lastHoursAllowance + 1
+			}
+			if (dragElSize > lastHoursAllowance) {
+				return false
+			}
+			
+			// ΝΕΟ: Έλεγχος για στήλες συνόλων
+			if (cell.classList.contains('no-drop-column')) {
+				return false
+			}
+			
+			return true
+		}
+
+		// Συνάρτηση για εύρεση επηρεαζόμενων κελιών
+		function getAffectedCells(cell) {
+			const table = document.getElementById('programTable')
+			const dragElId = draggedElement.id
+			const dragElTmima = draggedElement.getAttribute('tmima').split(',')
+			const dragElRow = draggedElement.getAttribute('row')
+			const dragElSize = parseInt(draggedElement.getAttribute('w')) || 1
+			const columnIndex = cell.cellIndex
+
+			if (!allowDrop(cell)) return []
+
+			let affectedCells = []
+			
+			// 1. ΕΛΕΓΧΟΣ ΓΙΑ ΠΟΛΛΑΠΛΟΥΣ ΚΑΘΗΓΗΤΕΣ (ίδιο id)
+			const sameIdSpans = Array.from(document.querySelectorAll(`span[id="${dragElId}"]`))
+			
+			sameIdSpans.forEach(sp => {
+				const spRow = parseInt(sp.getAttribute('row'))
+				const rowIndex = spRow + 2 // +2 για τα thead rows
+				
+				for (let i = 0; i < dragElSize; i++) {
+					const checkCol = columnIndex + i
+					if (checkCol >= warehouseColumnIndex) break
+					
+					const targetCell = table.rows[rowIndex]?.cells[checkCol]
+					if (targetCell && targetCell.id && targetCell.id !== dragElId) {
+						affectedCells.push(targetCell)
+					}
+				}
+			})
+
+			// 2. ΕΛΕΓΧΟΣ ΓΙΑ ΙΔΙΑ ΤΜΗΜΑΤΑ
+			dragElTmima.forEach(tm => {
+				for (let i = 0; i < dragElSize; i++) {
+					const checkCol = columnIndex + i
+					if (checkCol >= warehouseColumnIndex) break
+					
+					const cellsInColumn = Array.from(document.querySelectorAll(`td`))
+						.filter(td => td.cellIndex === checkCol && td.closest('tbody'))
+					
+					cellsInColumn.forEach(td => {
+						const tdTmima = td.getAttribute('tmima')?.split(',') || []
+						if (tdTmima.includes(tm) && td.id && td.id !== dragElId) {
+							affectedCells.push(td)
+						}
+					})
+				}
+			})
+
+			// 3. ΕΛΕΓΧΟΣ ΓΙΑ ΤΟΝ ΙΔΙΟ ΚΑΘΗΓΗΤΗ ΣΕ ΔΙΑΦΟΡΕΤΙΚΟ ΤΜΗΜΑ
+			const dragTeacherName = draggedElement.parentElement?.parentElement?.cells[0]?.textContent
+			
+			for (let row = 0; row < table.tBodies[0].rows.length; row++) {
+				const currentTeacher = table.tBodies[0].rows[row].cells[0].textContent
+				
+				if (currentTeacher === dragTeacherName) {
+					for (let i = 0; i < dragElSize; i++) {
+						const checkCol = columnIndex + i
+						if (checkCol >= warehouseColumnIndex) break
+						
+						const targetCell = table.tBodies[0].rows[row].cells[checkCol]
+						
+						if (targetCell.id && targetCell.id !== dragElId) {
+							const targetTmima = targetCell.getAttribute('tmima')?.split(',') || []
+							const hasCommonTmima = dragElTmima.some(tm => targetTmima.includes(tm))
+							
+							if (!hasCommonTmima) {
+								affectedCells.push(targetCell)
+							}
+						}
+					}
+				}
+			}
+
+			// ΑΦΑΙΡΕΣΗ ΔΙΠΛΟΤΥΠΩΝ
+			affectedCells = [...new Set(affectedCells)]
+			
+			// ΦΙΛΤΡΟ ΓΙΑ ΑΦΑΙΡΕΣΗ ΤΗΣ ΙΔΙΑΣ ΓΡΑΜΜΗΣ
+			const draggedRowIndex = parseInt(draggedElement.getAttribute('row')) + 2
+			
+			const filteredCells = affectedCells.filter(cell => {
+				const cellRow = cell.parentElement.rowIndex
+				const cellTmima = cell.getAttribute('tmima')?.split(',') || []
+				
+				// Έλεγξε αν το κελί έχει κοινό τμήμα
+				const hasCommonTmima = dragElTmima.some(tm => cellTmima.includes(tm))
+				
+				// Αν έχει κοινό τμήμα, κράτα το
+				if (hasCommonTmima) return true
+				
+				// Αν είναι στην ίδια γραμμή με το draggedElement, μην το κρατήσεις
+				if (cellRow === draggedRowIndex) return false
+				
+				// Αλλιώς κράτα το (ίδιος καθηγητής, διαφορετική γραμμή)
+				return true
+			})
+			
+			return filteredCells
+		}
+
+		// Συνάρτηση για εύρεση επηρεαζόμενων spans (καρτών)
+		function getAffectedSpans(affectedCells) {
+			let affectedSpans = []
+			affectedCells.forEach(cell => {
+				const spans = Array.from(document.querySelectorAll(`span.drag-span[id="${cell.id}"]`))
+				affectedSpans = [...affectedSpans, ...spans]
+			})
+			// Αφαίρεσε το draggedElement και διπλότυπα
+			affectedSpans = affectedSpans.filter(sp => sp.id !== draggedElement.id)
+			affectedSpans = Array.from(new Set(affectedSpans))
+			return affectedSpans
+		}
+
+		// Συνάρτηση για δημιουργία μηνύματος
+		function getMessage(cell, affectedSpans) {
+			if (affectedSpans.length === 0) return ''
+			
+			const dragElTmima = draggedElement.getAttribute('tmima')
+			const dragElTeacher = draggedElement.getAttribute('teacher')
+			const dragHour = draggedElement.parentElement?.getAttribute('hour') || '?'
+			const dropHour = cell.getAttribute('hour') || '?'
+			
+			// Δημιούργησε πίνακες με τους καθηγητές
+			const dragTeachers = dragElTeacher.split(' - ').map(t => t.trim())
+			
+			let message = `⚠️ ΜΕΤΑΚΙΝΗΣΗ ΜΑΘΗΜΑΤΟΣ ⚠️\n\n`
+			message += `📚 Τμήμα: ${dragElTmima}\n`
+			message += `👨‍🏫 Καθηγητές: ${dragElTeacher}\n`
+			message += `🕒 Από ώρα: ${dragHour} → Σε ώρα: ${dropHour}\n\n`
+			
+			if (affectedSpans.length > 0) {
+				const selfConflicts = []
+				const otherConflicts = []
+				
+				// ΧΡΗΣΙΜΟΠΟΙΗΣΕ Map για να αποφύγεις διπλότυπα με βάση το id της κάρτας
+				const uniqueSpans = new Map()
+				affectedSpans.forEach(sp => {
+					uniqueSpans.set(sp.id, sp)
+				})
+				
+				uniqueSpans.forEach(sp => {
+					const spTmima = sp.getAttribute('tmima')
+					const spTeacher = sp.getAttribute('teacher')
+					const spHour = sp.parentElement?.getAttribute('hour') || '?'
+					
+					// Δημιούργησε πίνακες με τους καθηγητές του άλλου μαθήματος
+					const spTeachers = spTeacher.split(' - ').map(t => t.trim())
+					
+					// Έλεγξε αν υπάρχει κοινός καθηγητής
+					const hasCommonTeacher = dragTeachers.some(dt => spTeachers.includes(dt))
+					
+					// Δημιούργησε ένα string αναπαράστασης για το μήνυμα
+					const conflictLine = `   • Τμήμα ${spTmima} : Ώρα ${spHour} ▶ ${spTeacher}`
+					
+					if (hasCommonTeacher) {
+						selfConflicts.push(conflictLine)
+					} else {
+						otherConflicts.push(conflictLine)
+					}
+				})
+				
+				// Αφαίρεσε διπλότυπα από τα μηνύματα (σε περίπτωση που υπάρχουν ίδιες γραμμές)
+				const uniqueSelfConflicts = [...new Set(selfConflicts)]
+				const uniqueOtherConflicts = [...new Set(otherConflicts)]
+				
+				if (uniqueSelfConflicts.length > 0) {
+					message += `🔴 ΣΥΓΚΡΟΥΣΗ ΜΕ ΤΟΝ ΙΔΙΟ ΚΑΘΗΓΗΤΗ:\n`
+					message += uniqueSelfConflicts.join('\n') + '\n\n'
+				}
+				
+				if (uniqueOtherConflicts.length > 0) {
+					message += `🟡 ΣΥΓΚΡΟΥΣΕΙΣ ΜΕ ΑΛΛΟΥΣ ΚΑΘΗΓΗΤΕΣ:\n`
+					message += uniqueOtherConflicts.join('\n') + '\n'
+				}
+			}
+			
+			message += `\nΘέλεις να προχωρήσεις στην αντικατάσταση;`
+			
+			return message
+		}
+
+		// ---------- COLOR PICKER ----------
+
+		function generatePalette() {
+			// 24 hues (κάθε 15°) × 6 combos = 144 χρώματα
+			// Ίδια εύρη S/L με τον αρχικό κώδικα
+			const colors = []
+			const hues = []
+			for (let h = 0; h < 360; h += 15) hues.push(h)
+
+			const slCombos = [
+				[45, 55], [65, 60], [85, 65],
+				[55, 70], [75, 50], [90, 72]
+			]
+
+			hues.forEach(h => {
+				slCombos.forEach(([s, l]) => {
+					colors.push(hslToHex(h, s, l))
+				})
+			})
+			return colors
+		}
+
+		function openColorPickerModal() {
+			if (!xmlName) {
+				alert('Φόρτωσε πρώτα ένα αρχείο .fet');
+				return
+			}
+			pendingColors = { ...teachersColorGlobal }
+
+			const tbody = document.querySelector('#colorPickerTable tbody')
+			tbody.innerHTML = ''
+
+			const names = Object.keys(teachersColorGlobal).filter(n => n !== 'notAv')
+
+			names.forEach(name => {
+				const tr = tbody.insertRow()
+				tr.insertCell().textContent = name
+
+				const colorCell = tr.insertCell()
+				const swatch = document.createElement('div')
+				swatch.className = 'color-swatch'
+				swatch.style.backgroundColor = pendingColors[name] || '#ffffff'
+				swatch.dataset.teacher = name
+				swatch.addEventListener('click', (e) => showColorPalette(e, name))
+				colorCell.appendChild(swatch)
+			})
+
+			document.getElementById('colorPickerModal').style.display = 'block'
+		}
+
+		function showColorPalette(event, teacherName) {
+			const palette = document.getElementById('colorPalette')
+			palette.innerHTML = ''
+
+			generatePalette().forEach(c => {
+				const box = document.createElement('div')
+				box.className = 'palette-color'
+				box.style.backgroundColor = c
+				box.title = c
+				box.addEventListener('click', () => {
+					pendingColors[teacherName] = c
+					const swatch = document.querySelector(
+						`.color-swatch[data-teacher="${CSS.escape(teacherName)}"]`
+					)
+					if (swatch) swatch.style.backgroundColor = c
+					palette.classList.add('display-none')
+				})
+				palette.appendChild(box)
+			})
+
+			palette.classList.remove('display-none')
+
+			// Τοποθέτηση δίπλα στο swatch
+			const rect = event.target.getBoundingClientRect()
+			let left = rect.right + 10
+			let top = rect.top
+			// Έλεγχος να μη βγει έξω από την οθόνη
+			const paletteWidth = 440
+			const paletteHeight = 440
+			if (left + paletteWidth > window.innerWidth) left = rect.left - paletteWidth - 10
+			if (top + paletteHeight > window.innerHeight) top = window.innerHeight - paletteHeight - 10
+			if (top < 0) top = 10
+			palette.style.left = left + 'px'
+			palette.style.top = top + 'px'
+		}
+
+		function applyColors() {
+			// Update globals
+			Object.keys(pendingColors).forEach(name => {
+				teachersColorGlobal[name] = pendingColors[name]
+				//teachersTextColorGlobal[name] = getContrastTextColor(pendingColors[name])
+			})
+
+			// Update όλες τις κάρτες με βάση το row τους (ποιος καθηγητής)
+			document.querySelectorAll('span.drag-span').forEach(sp => {
+				const rowAttr = sp.getAttribute('row')
+				if (!rowAttr) return
+				const rowIndex = parseInt(rowAttr)
+
+				for (const name in teachersIndexListGlobal) {
+					if (teachersIndexListGlobal[name] === rowIndex && name !== 'notAv') {
+						sp.style.background = teachersColorGlobal[name]
+						sp.style.color = '#000' //sp.style.color = teachersTextColorGlobal[name] || '#000'
+						break
+					}
+				}
+			})
+		}
+
+		function closeColorPicker() {
+			document.getElementById('colorPickerModal').style.display = 'none'
+			document.getElementById('colorPalette').classList.add('display-none')
+		}
+
+		function saveColorsToFile() {
+			applyColors()
+
+			const data = JSON.stringify(teachersColorGlobal, null, 2)
+			const blob = new Blob([data], { type: 'application/json' })
+			const url = URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			const baseName = xmlName ? xmlName.replace(/\.[^.]+$/, '') : 'fet'
+			a.download = baseName + '_colors.json'
+			document.body.appendChild(a)
+			a.click()
+			document.body.removeChild(a)
+			URL.revokeObjectURL(url)
+
+			closeColorPicker()
+		}
+
+		function openColorsFromFile() {
+			document.getElementById('colorsFileInput').click()
+		}
+
+		// Σύνδεση event listeners
+		document.addEventListener('DOMContentLoaded', () => {
+			const btn = document.getElementById('openColorPicker')
+			if (btn) btn.addEventListener('click', openColorPickerModal)
+
+			document.getElementById('applyColorsBtn').addEventListener('click', () => {
+				applyColors()
+				closeColorPicker()
+			})
+
+			document.getElementById('cancelColorsBtn').addEventListener('click', closeColorPicker)
+
+			document.getElementById('saveColorsBtn').addEventListener('click', saveColorsToFile)
+
+			document.getElementById('openColorsBtn').addEventListener('click', openColorsFromFile)
+
+			document.querySelector('.close-color-picker').addEventListener('click', closeColorPicker)
+
+			document.getElementById('colorsFileInput').addEventListener('change', (e) => {
+				const file = e.target.files[0]
+				if (!file) return
+				const reader = new FileReader()
+				reader.onload = (ev) => {
+					try {
+						const data = JSON.parse(ev.target.result)
+						pendingColors = { ...data }
+						Object.keys(pendingColors).forEach(name => {
+							const swatch = document.querySelector(
+								`.color-swatch[data-teacher="${CSS.escape(name)}"]`
+							)
+							if (swatch) swatch.style.backgroundColor = pendingColors[name]
+						})
+					} catch (err) {
+						alert('Σφάλμα ανάγνωσης αρχείου: ' + err.message)
+					}
+				}
+				reader.readAsText(file)
+				e.target.value = ''
+			})
+
+			// Κλείσιμο με κλικ έξω από το modal
+			const modal = document.getElementById('colorPickerModal')
+			modal.addEventListener('click', (e) => {
+				if (e.target === modal) closeColorPicker()
+			})
+
+			// Κλείσιμο παλέτας με κλικ έξω
+			document.addEventListener('click', (e) => {
+				const palette = document.getElementById('colorPalette')
+				if (!palette || palette.classList.contains('display-none')) return
+				if (!palette.contains(e.target) && !e.target.classList.contains('color-swatch')) {
+					palette.classList.add('display-none')
+				}
+			})
+		})
+		
+    </script>
+
+</body>
+
+</html>
