@@ -1998,19 +1998,31 @@ The original MIT License attribution has been retained.
 				const mouseX = e.clientX
 				const mouseY = e.clientY
 				const windowWidth = window.innerWidth
-				
-				// Τοποθέτησε το whiteboard δεξιά ή αριστερά ανάλογα με τη θέση του ποντικιού
+				const windowHeight = window.innerHeight
+
+				// Πάρε διαστάσεις whiteboard (τώρα που είναι ορατό)
+				const wbWidth = whiteboard.offsetWidth
+				const wbHeight = whiteboard.offsetHeight +10
+				const margin = 15   // περιθώριο από τις άκρες
+
+				// ΟΡΙΖΟΝΤΙΑ θέση
 				if (mouseX > windowWidth / 2) {
 					// Ποντίκι δεξιά - βάλε whiteboard αριστερά
-					whiteboard.style.left = '20px'
+					whiteboard.style.left = margin + 'px'
 					whiteboard.style.right = 'auto'
-					whiteboard.style.top = (mouseY - 100) + 'px'
 				} else {
 					// Ποντίκι αριστερά - βάλε whiteboard δεξιά
 					whiteboard.style.left = 'auto'
-					whiteboard.style.right = '20px'
-					whiteboard.style.top = (mouseY - 100) + 'px'
+					whiteboard.style.right = margin + 'px'
 				}
+
+				// ΚΑΘΕΤΗ θέση - με έλεγχο ορίων
+				let top = mouseY - 100
+				if (top < margin) top = margin
+				if (top + wbHeight > windowHeight - margin) {
+					top = windowHeight - wbHeight - margin
+				}
+				whiteboard.style.top = top + 'px'
 				whiteboard.style.transform = 'none' // Αφαίρεσε το κεντράρισμα
 			} else {
 				document.getElementById('whiteboard').classList.add('display-none')
@@ -2699,6 +2711,8 @@ The original MIT License attribution has been retained.
             eventListeners()
             showHidePrevNext()
             doToggleFooter()
+			initDayButtonsFromTable()
+			updatePrintTablesVisibility()
         }
 
         function next() {
@@ -2715,6 +2729,8 @@ The original MIT License attribution has been retained.
             eventListeners()
             showHidePrevNext()
             doToggleFooter()
+			initDayButtonsFromTable()
+			updatePrintTablesVisibility()
         }
 
 		function showHidePrevNext() {
@@ -3722,7 +3738,7 @@ The original MIT License attribution has been retained.
 			
 			sameIdSpans.forEach(sp => {
 				const spRow = parseInt(sp.getAttribute('row'))
-				const rowIndex = spRow + 2 // +2 για τα thead rows
+				const rowIndex = spRow // +2 για τα thead rows
 				
 				for (let i = 0; i < dragElSize; i++) {
 					const checkCol = columnIndex + i
@@ -3781,27 +3797,7 @@ The original MIT License attribution has been retained.
 			// ΑΦΑΙΡΕΣΗ ΔΙΠΛΟΤΥΠΩΝ
 			affectedCells = [...new Set(affectedCells)]
 			
-			// ΦΙΛΤΡΟ ΓΙΑ ΑΦΑΙΡΕΣΗ ΤΗΣ ΙΔΙΑΣ ΓΡΑΜΜΗΣ
-			const draggedRowIndex = parseInt(draggedElement.getAttribute('row')) + 2
-			
-			const filteredCells = affectedCells.filter(cell => {
-				const cellRow = cell.parentElement.rowIndex
-				const cellTmima = cell.getAttribute('tmima')?.split(',') || []
-				
-				// Έλεγξε αν το κελί έχει κοινό τμήμα
-				const hasCommonTmima = dragElTmima.some(tm => cellTmima.includes(tm))
-				
-				// Αν έχει κοινό τμήμα, κράτα το
-				if (hasCommonTmima) return true
-				
-				// Αν είναι στην ίδια γραμμή με το draggedElement, μην το κρατήσεις
-				if (cellRow === draggedRowIndex) return false
-				
-				// Αλλιώς κράτα το (ίδιος καθηγητής, διαφορετική γραμμή)
-				return true
-			})
-			
-			return filteredCells
+			return affectedCells
 		}
 
 		// Συνάρτηση για εύρεση επηρεαζόμενων spans (καρτών)
