@@ -16,6 +16,8 @@ I have added and modified features that were useful for my own work,
 and I am sharing this version in the hope that it may also help other
 teachers and schools.
 
+AUTHOR: gadgh (George D.)
+
 ## Original project
 - Original author: George Theodoroy
 - Original repository: https://github.com/g-theodoroy/FET_edit-print
@@ -27,6 +29,7 @@ The original attribution has been retained.
 ## Main additions in this version
 - teacher total-hours and contracted-hours columns
 - teacher color management
+- display teacher statistics
 - CSV export
 - enhanced teacher and group schedule print views
 - enhanced drag-and-drop conflict detection
@@ -34,10 +37,13 @@ The original attribution has been retained.
 - additional timetable display improvements
 
 ## Credits
-Many thanks to George Theodoroy for creating and sharing the original tool.
+Many thanks to: 
+- George Theodoroy for creating and sharing the original tool.
+- Liviu Lalescu
+- Volker Dirr
+- Vangelis Karafillidis
 
-This version is maintained by:
-gadgh (George D.)
+This version is maintained by: gadgh (George D.)
 
 ## License
 This project is distributed under the MIT License.
